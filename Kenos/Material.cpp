@@ -11,13 +11,12 @@ using Microsoft::WRL::ComPtr;
 
 #include "Material.h"
 
-Material::Material() 
-    : m_roughness(0.0f), m_albedo(Colors::White), m_emissiveColor(Colors::Black), m_emissiveIntensity(0.0f) {
-    // Initialize member variables
+Material::Material() {
+
 }
 
 Material::~Material() {
-    // Perform cleanup, if necessary
+
 }
 
 void Material::SetRoughness(float roughness) {
