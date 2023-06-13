@@ -11,6 +11,12 @@ using namespace DirectX::SimpleMath;
 
 using Microsoft::WRL::ComPtr;
 
+// Default constructor
+Mesh::Mesh()
+{
+	// Default implementation
+}
+
 Mesh::Mesh(vector<Vector3> vertices, vector<Vector3> indices)
 {
 	// Set member variables

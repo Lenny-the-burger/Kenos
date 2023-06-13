@@ -6,6 +6,7 @@
 class Mesh
 {
 public:
+	Mesh();
     Mesh(std::vector<DirectX::SimpleMath::Vector3> vertices, std::vector<DirectX::SimpleMath::Vector3> indices);
     ~Mesh();
 

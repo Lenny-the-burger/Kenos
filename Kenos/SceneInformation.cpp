@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "SceneInformation.h"
 
 #include <fstream>
@@ -8,6 +10,11 @@ using json = nlohmann::json;
 using namespace std;
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
+
+// Default constructor
+SceneInformation::SceneInformation() {
+
+};
 
 SceneInformation::SceneInformation(std::string filePath) {
 	// Load the scene file
@@ -44,12 +51,16 @@ SceneInformation::SceneInformation(std::string filePath) {
 	// Create scene objects
 	for (auto& object : data["objects"]) {
 		SceneObject o;
-		o.SetMesh(sceneMeshes[object["mesh"]]);
-		o.SetMaterial(sceneMaterials[object["material"]]);
+		o.SetMesh(&sceneMeshes[object["mesh"]]);
+		o.SetMaterial(&sceneMaterials[object["material"]]);
 		o.SetPosition(Vector3(object["position"][0], object["position"][1], object["position"][2]));
 		o.SetRotation(Vector3(object["rotation"][0], object["rotation"][1], object["rotation"][2]));
 		o.SetScale(Vector3(object["scale"][0], object["scale"][1], object["scale"][2]));
 
 		sceneObjects.push_back(o);
 	}
+};
+
+SceneInformation::~SceneInformation() {
+
 };

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <map>
 
 #include "Mesh.h"
 #include "Material.h"
@@ -14,6 +15,7 @@
 class SceneInformation
 {
 public:
+	SceneInformation();
 	SceneInformation(std::string sceneName);
 	~SceneInformation();
 
@@ -21,6 +23,9 @@ private:
 	// Scene object arrays
 	std::map<std::string, Mesh> sceneMeshes;
 	std::map<std::string, Material> sceneMaterials;
+	
+	// scene objects are the only ones not in a map because naming scene objects doesnt always make sence
+	// this one is named "player" this one is a glossy chair and is named "bob"
 	std::vector<SceneObject> sceneObjects;
 	
 	std::string sceneName;
