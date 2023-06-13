@@ -23,11 +23,11 @@ public:
     void SetScale(const DirectX::SimpleMath::Vector3& scale);
     DirectX::SimpleMath::Vector3 GetScale() const;
 
-    void SetMesh(std::shared_ptr<Mesh> mesh);
-    std::shared_ptr<Mesh> GetMesh() const;
+    void SetMesh(Mesh* mesh);
+    Mesh* GetMesh() const;
 
-    void SetMaterial(const Material& material);
-    const Material& GetMaterial() const;
+    void SetMaterial(Material* material);
+    const Material* GetMaterial() const;
 
     // get the final (transformed/scaled/rotated) vertex at index idx
     const DirectX::SimpleMath::Vector3 GetFinalVtx(int idx) const;
@@ -36,8 +36,8 @@ private:
     DirectX::SimpleMath::Vector3 m_position;
     DirectX::SimpleMath::Vector3 m_rotation;
     DirectX::SimpleMath::Vector3 m_scale;
-    std::shared_ptr<Mesh> m_mesh;
-    Material m_material;
+    Mesh* m_mesh;
+    Material* m_material;
 };
 
 // This holds all the scene objects that are currently in the scene.

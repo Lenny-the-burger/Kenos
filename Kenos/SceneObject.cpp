@@ -7,6 +7,7 @@
 #include "Mesh.h"
 #include "Material.h"
 #include "SceneObject.h"
+#include "SceneInformation.h"
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
@@ -55,22 +56,22 @@ Vector3 SceneObject::GetScale() const
     return m_scale;
 }
 
-void SceneObject::SetMesh(std::shared_ptr<Mesh> mesh)
+void SceneObject::SetMesh(Mesh* mesh)
 {
     m_mesh = mesh;
 }
 
-std::shared_ptr<Mesh> SceneObject::GetMesh() const
+Mesh* SceneObject::GetMesh() const
 {
     return m_mesh;
 }
 
-void SceneObject::SetMaterial(const Material& material)
+void SceneObject::SetMaterial(Material* material)
 {
     m_material = material;
 }
 
-const Material& SceneObject::GetMaterial() const
+const Material* SceneObject::GetMaterial() const
 {
     return m_material;
 }
