@@ -16,9 +16,9 @@ SceneInformation::SceneInformation() {
 
 };
 
-SceneInformation::SceneInformation(std::string filePath) {
+SceneInformation::SceneInformation(string filePath) {
 	// Load the scene file
-	std::ifstream f(filePath);
+	ifstream f(filePath);
 	json data = json::parse(f);
 
 	// Get the basic strings
@@ -42,10 +42,38 @@ SceneInformation::SceneInformation(std::string filePath) {
 		// check if the mesh file exists
 		ifstream f(mesh);
 		if (!f.good()) {
-			std::string errorMessage = "Mesh file '" + mesh + "' does not exist";
-			throw std::exception(errorMessage.c_str());
+			std::string errorMessage = "Mesh file '" + mesh + "' does not exist!";
+			MessageBoxA(NULL, errorMessage.c_str(), "Fatal error", MB_ICONERROR | MB_OK);
+			exit(0);
 		}
-		// TODO: load file here
+
+
+		
+		// Load mesh vertices and faces from json file
+		ifstream meshFile(mesh);
+		json meshData = json::parse(meshFile);
+
+		// Load vertices
+		const auto vertsXArr = meshData["verts"][0];
+		const auto vertsYArr = meshData["verts"][1];
+		const auto vertsZArr = meshData["verts"][2];
+		vector<Vector3> verts;
+		for (int i = 0; i < vertsXArr.size(); i++) {
+			verts.push_back(Vector3(vertsXArr[i], vertsYArr[i], vertsZArr[i]));
+		}
+
+		// Load faces
+		const auto face1Arr = meshData["faces"][0];
+		const auto face2Arr = meshData["faces"][1];
+		const auto face3Arr = meshData["faces"][2];
+		vector<Vector3> faces;
+		for (int i = 0; i < face1Arr.size(); i++) {
+			faces.push_back(Vector3(face1Arr[i], face2Arr[i], face3Arr[i]));
+		}
+
+		//Add mesh to the list of meshes in the scene
+		sceneMeshes[mesh] = Mesh{ verts, faces };
+		
 	}
 
 	// Create scene objects
@@ -59,6 +87,8 @@ SceneInformation::SceneInformation(std::string filePath) {
 
 		sceneObjects.push_back(o);
 	}
+
+	
 };
 
 SceneInformation::~SceneInformation() {
