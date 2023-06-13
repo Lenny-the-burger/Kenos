@@ -90,8 +90,3 @@ const Vector3 SceneObject::GetFinalVtx(int idx) const
 
     return vertex;
 }
-
-SceneObject getSceneObjectById(int id)
-{
-	return m_globalSceneObjects[id];
-}

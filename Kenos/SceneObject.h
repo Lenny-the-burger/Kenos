@@ -40,8 +40,3 @@ private:
     Material* m_material;
 };
 
-// This holds all the scene objects that are currently in the scene.
-std::vector<SceneObject> m_globalSceneObjects;
-
-SceneObject getSceneObjectById(int id);
-
