@@ -40,6 +40,11 @@ void Game::Initialize(HWND window, int width, int height)
     */
 }
 
+SceneInformation Game::GetSceneInformation() const noexcept
+{
+	return localSceneInformation;
+}
+
 #pragma region Frame Update
 // Executes the basic game loop.
 void Game::Tick()

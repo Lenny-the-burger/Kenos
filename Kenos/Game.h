@@ -13,7 +13,6 @@
 #include "SceneInformation.h"
 
 
-
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
 class Game final : public DX::IDeviceNotify
@@ -51,6 +50,10 @@ public:
     // Properties
     void GetDefaultSize( int& width, int& height ) const noexcept;
 
+	// Scene information
+	SceneInformation GetSceneInformation() const noexcept;
+	
+
 private:
 
     void Update(DX::StepTimer const& timer);
@@ -73,6 +76,7 @@ private:
     std::unique_ptr<DirectX::BasicEffect> m_effect;
     std::unique_ptr<DirectX::PrimitiveBatch<VertexType>> m_batch;
     Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
-    
+   
+    // Scene information
     SceneInformation localSceneInformation;
 };
