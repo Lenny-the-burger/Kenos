@@ -222,6 +222,8 @@
   <ItemGroup>
     <None Include="..\LICENSE" />
     <None Include="..\README.md" />
+    <None Include="floor.json" />
+    <None Include="icoSphere.json" />
     <None Include="packages.config" />
     <None Include="scene.json" />
   </ItemGroup>

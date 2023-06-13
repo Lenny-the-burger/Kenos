@@ -102,11 +102,19 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="scene.json" />
     <None Include="..\LICENSE">
       <Filter>Misc files</Filter>
     </None>
     <None Include="..\README.md">
+      <Filter>Misc files</Filter>
+    </None>
+    <None Include="scene.json">
+      <Filter>Misc files</Filter>
+    </None>
+    <None Include="icoSphere.json">
+      <Filter>Misc files</Filter>
+    </None>
+    <None Include="floor.json">
       <Filter>Misc files</Filter>
     </None>
   </ItemGroup>
