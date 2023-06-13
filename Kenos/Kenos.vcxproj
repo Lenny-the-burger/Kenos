@@ -221,6 +221,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\LICENSE" />
+    <None Include="..\README.md" />
     <None Include="packages.config" />
     <None Include="scene.json" />
   </ItemGroup>

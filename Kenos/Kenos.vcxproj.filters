@@ -17,6 +17,9 @@
     <Filter Include="Compute">
       <UniqueIdentifier>{f1cb2aee-9727-4c7a-9c58-271e470c72b8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Misc files">
+      <UniqueIdentifier>{fa619806-e6e8-4dd3-95b4-cfb837c8ea98}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -100,6 +103,11 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="scene.json" />
-    <None Include="..\LICENSE" />
+    <None Include="..\LICENSE">
+      <Filter>Misc files</Filter>
+    </None>
+    <None Include="..\README.md">
+      <Filter>Misc files</Filter>
+    </None>
   </ItemGroup>
 </Project>
