@@ -1,0 +1,42 @@
+{
+  "sceneName": "Test scene",
+  "sceneDescription": "This is a test scene",
+  "meshes": [ "icoSphere.dobj", "floor.dobj" ],
+  "materials": [
+    {
+      "name": "glossy",
+      "albedo": [ 255, 255, 255 ],
+      "emissiveIntensity": 0,
+      "roughness": 0
+    },
+    {
+      "name": "floorMaterial",
+      "albedo": [ 127, 255, 127 ],
+      "emissiveIntensity": 1,
+      "roughness": 1
+    }
+  ],
+  "objects": [
+    {
+      "mesh": "icoSphere.obj",
+      "material": "glossy",
+      "position": [ 0, 2.5, 0 ],
+      "rotation": [ 0, 0, 0 ],
+      "scale": [ 1.5, 1.5, 1.5 ]
+    },
+    {
+      "mesh": "floor.obj",
+      "material": "floorMaterial",
+      "position": [ 0, -1, 0 ],
+      "rotation": [ 0, 0, 0 ],
+      "scale": [ 1, 1, 1 ]
+    }
+  ],
+  "pointLights": [
+    {
+      "position": [ 0, 2, 2 ],
+      "color": [ 255, 255, 255 ],
+      "intensity": 1
+    }
+  ]
+}
