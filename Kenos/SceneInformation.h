@@ -19,6 +19,17 @@ public:
 	SceneInformation(std::string sceneName);
 	~SceneInformation();
 
+	// Getters
+	std::string getSceneName();
+	std::string getSceneDescription();
+	std::string getScenePath();
+
+	std::map<std::string, Mesh> getSceneMeshes();
+	std::map<std::string, Material> getSceneMaterials();
+	
+	std::vector<SceneObject> getSceneObjects();
+	
+
 private:
 	// Scene object arrays
 	std::map<std::string, Mesh> sceneMeshes;

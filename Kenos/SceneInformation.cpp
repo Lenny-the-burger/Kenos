@@ -42,7 +42,7 @@ SceneInformation::SceneInformation(string filePath) {
 		// check if the mesh file exists
 		ifstream f(mesh);
 		if (!f.good()) {
-			std::string errorMessage = "Mesh file '" + mesh + "' does not exist!";
+			string errorMessage = "Mesh file '" + mesh + "' does not exist!";
 			MessageBoxA(NULL, errorMessage.c_str(), "Fatal error", MB_ICONERROR | MB_OK);
 			exit(0);
 		}
@@ -93,4 +93,34 @@ SceneInformation::SceneInformation(string filePath) {
 
 SceneInformation::~SceneInformation() {
 
-};
+}
+
+string SceneInformation::getSceneName()
+{
+	return sceneName;
+}
+
+string SceneInformation::getSceneDescription()
+{
+	return sceneDescription;
+}
+
+string SceneInformation::getScenePath()
+{
+	return scenePath;
+}
+
+map<string, Mesh> SceneInformation::getSceneMeshes()
+{
+	return sceneMeshes;
+}
+
+map<string, Material> SceneInformation::getSceneMaterials()
+{
+	return sceneMaterials;
+}
+
+vector<SceneObject> SceneInformation::getSceneObjects()
+{
+	return sceneObjects;
+}
