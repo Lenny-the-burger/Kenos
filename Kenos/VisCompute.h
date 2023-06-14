@@ -12,5 +12,7 @@ struct FaceVisibilityData;
 // Init VisArray (array of hashmaps, each hashmap contains visibility info for a face)
 std::vector<std::map<DirectX::SimpleMath::Vector3, int>> d_VisArray;
 
-// reflect/specular is no longer needed because you can just do a-b to get a reflection
-// vector, since all refelction are 180
+vector<SceneObject> sceneObjects;
+
+// return triangle at global index idx
+std::tuple<DirectX::SimpleMath::Vector3, DirectX::SimpleMath::Vector3, DirectX::SimpleMath::Vector3> getTribyGlobalIndex(int idx);

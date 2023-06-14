@@ -1,6 +1,10 @@
 #include "pch.h"
 #include "VisCompute.h"
 
+#include "Mesh.h"
+#include "Material.h"
+#include "SceneObject.h"
+
 #include "SceneInformation.h"
 
 #include <map>
@@ -75,6 +79,8 @@ void recomputeVisArray(SceneInformation scene) {
 	*	reciever from the caster. For now this is just done brute force by drawing from the pool
 	*	of visible polygons that we computed in step 3. TODO: this will eventually use some sort of
 	*	BVH or probably dot target culling.
+	* 6. Finally add the computed data to the visibility map in a FaceVisibilityData struct, where
+	*	the key is the vector that goes from the reciever to the caster.
 	* 
 	* Note that steps 2 and 3 can be done in either order, will require more testing to find optimal
 	* order. For now step 3 is done by dot prod of normal and vector to the other tri, but eventually
@@ -82,9 +88,39 @@ void recomputeVisArray(SceneInformation scene) {
 	* optimization to do here later on.
 	*/
 
-	// Clear the VisArray
+	// Clear the visibility array
 	d_VisArray.clear();
-	
-	
+
+	// Load the scene objects from the scene and set up the global index
+	sceneObjects = scene.getSceneObjects();
+
     
 }
+
+// return triangle at global index idx
+tuple<Vector3, Vector3, Vector3> getTribyGlobalIndex(int idx) {
+	int currentSO = 0;
+	int accTriCount = 0;
+	for (SceneObject& obj : sceneObjects) {
+		accTriCount += (obj.GetMesh())->GetFaceCount();
+		
+		// if the index is less than the accumulated tri count then we are in range
+		if (idx < accTriCount) {
+			// get the face index vector at position idx - accTriCount
+			Vector3 faceIdxVec = (obj.GetMesh())->GetIndices()[idx - accTriCount];
+
+			// using each element in the index vector construct tuple from GetFinalVtx()
+			return make_tuple(
+				obj.GetFinalVtx(faceIdxVec.x), 
+				obj.GetFinalVtx(faceIdxVec.y), 
+				obj.GetFinalVtx(faceIdxVec.z)
+			);
+
+		}
+
+		// otherwise we need to move on to the next object
+		currentSO++;
+	}
+	throw std::out_of_range("Triangle index out of range");
+}
+
