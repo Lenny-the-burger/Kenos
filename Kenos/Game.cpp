@@ -215,6 +215,12 @@ void Game::CreateDeviceDependentResources()
     // Initialize scene geometry and do the initial visibility data and light tree
     // compute here
 	localSceneInformation = SceneInformation("scene.json");
+
+    //FaceVisibilityData temp;
+
+    //// compute visibility structure
+    //recomputeVisArray(localSceneInformation);
+    
     
 }
 
