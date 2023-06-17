@@ -1,15 +1,6 @@
 #include "pch.h"
 #include "VisCompute.h"
 
-#include "Mesh.h"
-#include "Material.h"
-#include "SceneObject.h"
-
-#include "SceneInformation.h"
-
-#include <map>
-#include <vector>
-
 using namespace std;
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
@@ -30,19 +21,6 @@ using namespace DirectX::SimpleMath;
 *	contains data used for lighting tree construction, such as the mean path distance
 *	and more (see structure below)
 */
-
-// Struct for storing visibility data, holds shadows, mean path distance
-struct FaceVisibilityData {
-	// Index of reciever
-	int recieverIdx;
-
-	// Shortest distance between caster and reciever polygon (the mean path)
-	float meanPathDist;
-
-	// Indexes of all polygons that diffusly shadow the reciever from the caster
-	// for specular we cannot precompute this because the focal point changes
-	vector<int> diffuseShadowers;
-};
 
 // Compute the VisArray from scratch
 void recomputeVisArray(SceneInformation scene) {
@@ -75,12 +53,8 @@ void recomputeVisArray(SceneInformation scene) {
 	*	triangle and the visible one, which is the shortest path between the two. For now this is
 	*	done by just getting the distance between the two triangle means, as triangles tend to be
 	*	pretty small on modern models and not that visible. TODO: properly solve for the mean path
-	* 5. Compute the diffuse shadowers, which are the polygons that cast a shadow onto the current
-	*	reciever from the caster. For now this is just done brute force by drawing from the pool
-	*	of visible polygons that we computed in step 3. TODO: this will eventually use some sort of
-	*	BVH or probably dot target culling.
-	* 6. Finally add the computed data to the visibility map in a FaceVisibilityData struct, where
-	*	the key is the vector that goes from the reciever to the caster.
+	* 5. Finally add the computed data to the visibility map in a FaceVisibilityData struct, where
+	*	the key is the vector that goes from the caster to the reciever.
 	* 
 	* Note that steps 2 and 3 can be done in either order, will require more testing to find optimal
 	* order. For now step 3 is done by dot prod of normal and vector to the other tri, but eventually
@@ -94,7 +68,96 @@ void recomputeVisArray(SceneInformation scene) {
 	// Load the scene objects from the scene and set up the global index
 	sceneObjects = scene.getSceneObjects();
 
-    
+	// count globalpolycount
+	for (SceneObject& obj : sceneObjects) {
+		globalPolyCount += (obj.GetMesh())->GetFaceCount();
+	}
+	
+	// init stuff used in the loop so we arent constantly destroying and creating vars
+	tuple<Vector3, Vector3, Vector3> currTri;
+	tuple<Vector3, Vector3, Vector3> otherTri;
+
+	Vector3 currNormal;
+	Vector3 otherNormal;
+
+	Vector3 currMean;
+	Vector3 otherMean;
+	
+	float currMeanDist;
+	
+	Vector3 currToOther;
+
+	// both of these have to be true for the other triangle ot be considered visible
+	bool isBackfaceVisible;
+	bool isBelowVisible;
+
+	FaceVisibilityData currVisData;
+
+	// the shortcut map, if triangle a is visible from triangle b then triangle b is visible from a
+	// so no point in computing it twice.
+	// adress it like this: shortcutMap[triangleA][triangleB] = true
+	/*vector<map<int, bool>> shortcutMap;*/
+
+	// for each polygon in the scene
+	for (int globalIndex = 0; globalIndex < globalPolyCount; globalIndex++) {		
+		currTri = getTribyGlobalIndex(globalIndex);
+		currNormal = GetNormal(get<0>(currTri), get<1>(currTri), get<2>(currTri));
+		currMean = (get<0>(currTri) + get<1>(currTri) + get<2>(currTri))/3;
+
+		// add empty map to write vis data to
+		d_VisArray.push_back(map<Vector3, FaceVisibilityData>());
+		
+		// initial visibility compute to create visibleIdxs
+		for (int i = 0; i < globalPolyCount; i++) {
+			// if the current polygon is the same as the one we are culling, skip it
+			if (i == globalIndex) continue;
+
+			// TODO: shortcut map
+			//// check if it exists in the shortcutmap, if it does:
+			//// if it is visible add it to the visibleIdxs
+			//// if it is not visible, skip it
+			//if (shortcutMap[globalIndex].count(i) > 0) {
+			//	if (shortcutMap[globalIndex][i]) {
+			//		// get the FaceVisibilityData from the previous entry and add it here
+			//		otherMean = (get<0>(otherTri) + get<1>(otherTri) + get<2>(otherTri)) / 3;
+			//		currToOther = currMean - otherMean; // its in this order because vector sub is backwards
+
+			//		// get the vis data from the other triangle
+			//		currVisData = d_VisArray[i][currToOther];
+			//		
+			//		
+			//	}
+			//	continue;
+			//}
+
+			// get the triangle we are evaluating
+			otherTri = getTribyGlobalIndex(i);
+			
+			// get the other stuff we need
+			otherNormal = GetNormal(get<0>(otherTri), get<1>(otherTri), get<2>(otherTri));
+			otherMean = (get<0>(otherTri) + get<1>(otherTri) + get<2>(otherTri)) / 3;
+			currToOther = currMean - otherMean; // its in this order because vector sub is backwards
+			currMeanDist = currToOther.Length();
+
+			// do culling
+			isBackfaceVisible = currNormal.Dot(otherNormal) < 0; // need to face opposite dir
+			isBelowVisible = currToOther.Dot(currNormal) > 0; // need to face the same dir
+
+			// if the triangle is visible, add it to the visible array
+			if (isBackfaceVisible && isBelowVisible) {
+				// setup face vis data
+				currVisData = FaceVisibilityData();
+				currVisData.meanPathDist = currMeanDist;
+				currVisData.receiverIdx = i;
+				// implement dot target later
+				
+				d_VisArray[globalIndex][currToOther] = currVisData;
+			}
+
+			// add the result to the shortcut map
+			/*shortcutMap[globalIndex][i] = isBackfaceVisible && isBelowVisible;*/
+		}
+	}
 }
 
 // return triangle at global index idx
@@ -111,9 +174,9 @@ tuple<Vector3, Vector3, Vector3> getTribyGlobalIndex(int idx) {
 
 			// using each element in the index vector construct tuple from GetFinalVtx()
 			return make_tuple(
-				obj.GetFinalVtx(faceIdxVec.x), 
-				obj.GetFinalVtx(faceIdxVec.y), 
-				obj.GetFinalVtx(faceIdxVec.z)
+				obj.GetFinalVtx((int) faceIdxVec.x), // explicit cast to get rid of warning
+				obj.GetFinalVtx((int) faceIdxVec.y), 
+				obj.GetFinalVtx((int) faceIdxVec.z)
 			);
 
 		}
