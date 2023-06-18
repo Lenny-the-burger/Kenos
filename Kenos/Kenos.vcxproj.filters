@@ -1,15 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Common">
-      <UniqueIdentifier>2ba0d2ad-69e0-48b2-943c-0db5f7b7736e</UniqueIdentifier>
-    </Filter>
     <Filter Include="Assets">
       <UniqueIdentifier>a3fab4c5-851d-4e10-b056-0b973d1094db</UniqueIdentifier>
       <Extensions>ico;cur;bmp;dds;dlg;fbx;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tga;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
-    <Filter Include="Classes">
-      <UniqueIdentifier>{f03fd467-9920-4954-a0e9-c54ed06331d7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Libraries">
       <UniqueIdentifier>{e7112803-f22e-4bac-baf3-5e5e97b364cd}</UniqueIdentifier>
@@ -19,6 +13,15 @@
     </Filter>
     <Filter Include="Misc files">
       <UniqueIdentifier>{fa619806-e6e8-4dd3-95b4-cfb837c8ea98}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Base classes">
+      <UniqueIdentifier>{f03fd467-9920-4954-a0e9-c54ed06331d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Compound classes">
+      <UniqueIdentifier>{e3c7d2e2-482a-4527-a182-baa6fba9dd98}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>2ba0d2ad-69e0-48b2-943c-0db5f7b7736e</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -43,16 +46,19 @@
       <Filter>Compute</Filter>
     </ClInclude>
     <ClInclude Include="SceneObject.h">
-      <Filter>Classes</Filter>
+      <Filter>Base classes</Filter>
     </ClInclude>
     <ClInclude Include="Material.h">
-      <Filter>Classes</Filter>
+      <Filter>Base classes</Filter>
     </ClInclude>
     <ClInclude Include="Mesh.h">
-      <Filter>Classes</Filter>
+      <Filter>Base classes</Filter>
     </ClInclude>
     <ClInclude Include="SceneInformation.h">
-      <Filter>Classes</Filter>
+      <Filter>Compound classes</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneLightingInformation.h">
+      <Filter>Compound classes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -63,13 +69,13 @@
       <Filter>Common</Filter>
     </ClCompile>
     <ClCompile Include="Material.cpp">
-      <Filter>Classes</Filter>
+      <Filter>Base classes</Filter>
     </ClCompile>
     <ClCompile Include="Mesh.cpp">
-      <Filter>Classes</Filter>
+      <Filter>Base classes</Filter>
     </ClCompile>
     <ClCompile Include="SceneObject.cpp">
-      <Filter>Classes</Filter>
+      <Filter>Base classes</Filter>
     </ClCompile>
     <ClCompile Include="ClippingLib.cpp">
       <Filter>Libraries</Filter>
@@ -84,7 +90,10 @@
       <Filter>Compute</Filter>
     </ClCompile>
     <ClCompile Include="SceneInformation.cpp">
-      <Filter>Classes</Filter>
+      <Filter>Compound classes</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneLightingInformation.cpp">
+      <Filter>Compound classes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -117,5 +126,10 @@
     <None Include="floor.json">
       <Filter>Misc files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="compute_readme.txt">
+      <Filter>Compute</Filter>
+    </Text>
   </ItemGroup>
 </Project>
