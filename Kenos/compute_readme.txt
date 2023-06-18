@@ -1,0 +1,1 @@
+Nothing in this folder is actually used, might implement later. Kept giving me linker errors now eevrything just happens in the SceneLightingInformation class.

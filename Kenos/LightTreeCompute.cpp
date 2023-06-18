@@ -84,3 +84,8 @@ void buildLightTree() {
 void updateLightTree(int idx) {
 	
 }
+
+// this is called every frame to update what needs to be rendered depending on changes (such as camera move)
+void updateFinalRDfbuff() {
+
+}
