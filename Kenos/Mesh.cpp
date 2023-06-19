@@ -41,14 +41,14 @@ void Mesh::SetVertices(const Vector3 vertices[])
     }
 }
 
-const Vector3* Mesh::GetVertices() const
+const vector<Vector3>* Mesh::GetVertices() const
 {
-    return m_vertices.data();
+	return &m_vertices;
 }
 
 int Mesh::GetVertexCount() const
 {
-    return static_cast<int>(m_vertices.size());
+    return m_vertices.size();
 }
 
 void Mesh::SetIndices(const Vector3 indices[])
@@ -62,12 +62,12 @@ void Mesh::SetIndices(const Vector3 indices[])
     }
 }
 
-const Vector3* Mesh::GetIndices() const
+const vector<Vector3>* Mesh::GetIndices() const
 {
-    return m_indices.data();
+    return &m_indices;
 }
 
 int Mesh::GetFaceCount() const
 {
-    return static_cast<int>(m_indices.size());
+	return m_indices.size();
 }
