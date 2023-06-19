@@ -87,7 +87,6 @@ std::unique_ptr<float[]> RemoveElement(float arr[], int pos);
 // Returns:
 //		The projected point (2d vector)
 Vector2 ProjectPointOntoLine(Vector2 a, Vector2 b, Vector2 p) {
-	float test = a.Dot(b);
 	Vector2 bProj = a - b;
 	Vector2 cProj = bProj * (p.Dot(bProj) / bProj.Dot(bProj));
 	// yes, dot(b, b) is not a typo, blame the person that helped get me proection working for it.
