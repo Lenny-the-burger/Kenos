@@ -12,6 +12,38 @@
 * and vise versa. This will eventually be used to save compute light tree and visibility data to disk.
 */
 
+using DXVector3 = DirectX::SimpleMath::Vector3;
+
+/* Camera setup like this:
+*	Front view:
+*     B---C
+*	foc\A/oint
+* 
+*	Side view:
+*       C
+*		A-----focalPoint
+* 
+*	A is the screen position, usually treated as the camera position.
+*	BC and unit vectors in the plane that makes up the screen
+* 
+*	The focal point is focal point focal length away and is on the normal of the screen plane
+*	passing through a.
+* 
+*	Manually setting B or C or the focal point is not recomended, use the provided functions.
+*/
+
+struct Camera {
+	DXVector3 Apos;
+	DXVector3 Bpos;
+	DXVector3 Cpos;
+	
+	DXVector3 focalPoint;
+	float focalLength;
+
+	// we need to store this to be able to recreate a new focal point
+	DirectX::XMVECTOR prevRotQuat;
+};
+
 class SceneInformation
 {
 public:
@@ -28,7 +60,23 @@ public:
 	std::map<std::string, Material> getSceneMaterials();
 	
 	std::vector<SceneObject> getSceneObjects();
+
+	int getGlobalPolyCount();
+
+	// return triangle at global index idx
+	std::tuple<DXVector3, DXVector3, DXVector3> getTribyGlobalIndex(int idx);
+
+	// camera functions
+	void setCameraPos(DXVector3 newPos);
+	void rotateCamera(DXVector3 rotation);
 	
+	void setCameraFocalLength(float newFocalLength);
+	float getCameraFocalLength();
+
+	// Heres the camera object dumbass, this is what you get for not using builtins
+	Camera getCam();
+
+	DXVector3 untransformFromCam(DXVector3 vect);
 
 private:
 	// Scene object arrays
@@ -42,4 +90,8 @@ private:
 	std::string sceneName;
 	std::string sceneDescription;
 	std::string scenePath;
+
+	Camera cam;
+
+	int globalPolyCount;
 };
