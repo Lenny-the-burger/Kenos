@@ -82,7 +82,7 @@ void buildLightTree() {
 // Parameters:
 //		idx: The index of the emissive surface (sceneobject) that is being updated
 void updateLightTree(int idx) {
-	
+	idx;
 }
 
 // this is called every frame to update what needs to be rendered depending on changes (such as camera move)

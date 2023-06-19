@@ -25,6 +25,8 @@ using Microsoft::WRL::ComPtr;
 */
 Vector2 ClipVector(Vector2 tri[], Vector2 p) {
 	// This isnt used for now so ill implement it later if needed
+	tri;
+	p;
 	return Vector2();
 }
 
@@ -114,7 +116,7 @@ Vector2* ClipTri(Vector2 tri1[], Vector2 tri2[]) {
 	for (int i = 0; i < outlistLength; i++) {
 		outMean += outlist[i];
 	}
-	outMean /= outlistLength;
+	outMean /= (float) outlistLength;
 
 	// Compute angles of each point relative to the mean
 	float outlistAngles[6];

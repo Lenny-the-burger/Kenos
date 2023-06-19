@@ -13,7 +13,7 @@ using namespace DirectX::SimpleMath;
 
 // Default constructor
 SceneInformation::SceneInformation() {
-
+	globalPolyCount = 0;
 };
 
 SceneInformation::SceneInformation(string filePath) {
