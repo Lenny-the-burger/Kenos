@@ -112,4 +112,13 @@ DirectX::SimpleMath::Vector3 GetNormal(DirectX::SimpleMath::Vector3 a, DirectX::
 // project point p onto plane defined by abc
 DirectX::SimpleMath::Vector3 ProjectABC(DirectX::SimpleMath::Vector3 a, DirectX::SimpleMath::Vector3 b, DirectX::SimpleMath::Vector3 c, DirectX::SimpleMath::Vector3 p);
 
+// Compute the solid angle of triangle abc from point p
+float SolidAngle(DirectX::SimpleMath::Vector3 a, DirectX::SimpleMath::Vector3 b, DirectX::SimpleMath::Vector3 c, DirectX::SimpleMath::Vector3 p);
+
+// Get the vector pointing to the centre of triangle abc from point p
+DirectX::SimpleMath::Vector3 MeanPointingVect(DirectX::SimpleMath::Vector3 a, DirectX::SimpleMath::Vector3 b, DirectX::SimpleMath::Vector3 c, DirectX::SimpleMath::Vector3 p);
+
+// Determine if two solid angles intersect on the unit sphere
+bool SolidAngleIntersect(DirectX::SimpleMath::Vector3 a, DirectX::SimpleMath::Vector3 b, float aSolidAngle, float bSolidAngle);
+
 #endif
