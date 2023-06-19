@@ -7,6 +7,7 @@
 
 extern void ExitGame() noexcept;
 
+using namespace std;
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
@@ -93,6 +94,46 @@ void Game::Render()
     context->IASetInputLayout(m_inputLayout.Get());
 
     m_batch->Begin();
+    
+    
+    
+	Camera localCamera = localSceneInformation.getCam();
+
+	XMVECTOR camPlane = XMPlaneFromPoints(localCamera.Apos, localCamera.Bpos, localCamera.Cpos);
+    
+    tuple<Vector3, Vector3, Vector3> currTri;
+
+	Vector3 halfScreenVect = Vector3(1920/2, 1080/2, 0);
+    
+    for (int globalIndex = 0; globalIndex < 10; globalIndex++) {
+		currTri = localSceneInformation.getTribyGlobalIndex(globalIndex);
+        
+		Vector3 v1 = get<0>(currTri);
+		Vector3 v2 = get<1>(currTri);
+		Vector3 v3 = get<2>(currTri);
+
+        // intersect the camera plane with a line that goes through each vert
+        // of the triangle and the focal point
+		v1 = XMPlaneIntersectLine(camPlane, localCamera.focalPoint, v1);
+		v2 = XMPlaneIntersectLine(camPlane, localCamera.focalPoint, v2);
+		v3 = XMPlaneIntersectLine(camPlane, localCamera.focalPoint, v3);
+
+		// normalize points
+        v1 = localSceneInformation.untransformFromCam(v1);
+		v2 = localSceneInformation.untransformFromCam(v2);
+		v3 = localSceneInformation.untransformFromCam(v3);
+
+		// assuming a 1920x1080 screen resolution for now
+		v1 += halfScreenVect;
+		v2 += halfScreenVect;
+		v3 += halfScreenVect;
+
+		VertexPositionColor screenv1(v1, Colors::Red);
+		VertexPositionColor screenv2(v2, Colors::Green);
+		VertexPositionColor screenv3(v3, Colors::Blue);
+
+		m_batch->DrawTriangle(screenv1, screenv2, screenv3);
+    }
 
 	// access the vertex buffer and one by one draw the triangles
 	/*for (auto& tri : finalTriBuff)
@@ -215,12 +256,6 @@ void Game::CreateDeviceDependentResources()
     // Initialize scene geometry and do the initial visibility data and light tree
     // compute here
 	localSceneInformation = SceneInformation("scene.json");
-
-    //FaceVisibilityData temp;
-
-    //// compute visibility structure
-    //recomputeVisArray(localSceneInformation);
-    
     
 }
 

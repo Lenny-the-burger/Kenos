@@ -12,8 +12,8 @@
 #include "SceneObject.h"
 #include "SceneInformation.h"
 
-//#include "VisCompute.h"
-
+#include <vector>
+#include <map>
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
