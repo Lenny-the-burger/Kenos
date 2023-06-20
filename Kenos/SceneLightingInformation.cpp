@@ -26,7 +26,7 @@ void SceneLightingInformation::SetScene(SceneInformation* newScene)
 
 	// count globalpolycount
 	for (SceneObject& obj : sceneObjects) {
-		globalPolyCount += (obj.GetMesh())->GetFaceCount();
+		globalPolyCount += (obj.GetMesh()).GetFaceCount();
 	}
 }
 
