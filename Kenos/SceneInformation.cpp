@@ -68,7 +68,9 @@ SceneInformation::SceneInformation(string filePath) {
 		const auto face3Arr = meshData["faces"][2];
 		vector<Vector3> faces;
 		for (int i = 0; i < face1Arr.size(); i++) {
-			faces.push_back(Vector3(face1Arr[i], face2Arr[i], face3Arr[i]));
+			// subtract one because the faces are 1-indexed in the json file :(
+			// TODO: fix this when we have proper obj loading
+			faces.push_back(Vector3(face1Arr[i], face2Arr[i], face3Arr[i]) - Vector3(1, 1, 1));
 		}
 
 		//Add mesh to the list of meshes in the scene
@@ -79,7 +81,7 @@ SceneInformation::SceneInformation(string filePath) {
 	// Create scene objects
 	for (auto& object : data["objects"]) {
 		SceneObject o;
-		o.SetMesh(&sceneMeshes[object["mesh"]]);
+		o.SetMesh(sceneMeshes[object["mesh"]]);
 		o.SetMaterial(&sceneMaterials[object["material"]]);
 		o.SetPosition(Vector3(object["position"][0], object["position"][1], object["position"][2]));
 		o.SetRotation(Vector3(object["rotation"][0], object["rotation"][1], object["rotation"][2]));
@@ -90,7 +92,7 @@ SceneInformation::SceneInformation(string filePath) {
 
 	// count globalpolycount
 	for (SceneObject& obj : sceneObjects) {
-		globalPolyCount += (obj.GetMesh())->GetFaceCount();
+		globalPolyCount += (obj.GetMesh()).GetFaceCount();
 	}
 
 	// Setup the camera
@@ -128,13 +130,17 @@ tuple<Vector3, Vector3, Vector3> SceneInformation::getTribyGlobalIndex(int idx) 
 	int currentSO = 0;
 	int accTriCount = 0;
 	int nextFaceAmount;
+	Mesh objMesh;
+	
 	for (SceneObject& obj : sceneObjects) {
-		nextFaceAmount = (obj.GetMesh())->GetFaceCount();
+		objMesh = obj.GetMesh();
+
+		nextFaceAmount = objMesh.GetFaceCount();
 
 		// if the index is less than the accumulated tri count then we are in range
 		if (idx < accTriCount + nextFaceAmount) {
 			// get the face index vector at position idx - accTriCount
-			Vector3 faceIdxVec = (obj.GetMesh())->GetIndices()[idx - accTriCount];
+			Vector3 faceIdxVec = objMesh.GetIndex(idx - accTriCount);
 
 			// using each element in the index vector construct tuple from GetFinalVtx()
 			return make_tuple(
