@@ -19,6 +19,12 @@ SceneInformation::SceneInformation() {
 SceneInformation::SceneInformation(string filePath) {
 	// Load the scene file
 	ifstream f(filePath);
+	if (!f.good()) {
+		string errorMessage = "Scene file file '" + filePath + "' does not exist!";
+		MessageBoxA(NULL, errorMessage.c_str(), "Fatal error", MB_ICONERROR | MB_OK);
+		exit(0);
+	}
+
 	json data = json::parse(f);
 
 	// Get the basic strings
