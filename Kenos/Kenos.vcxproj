@@ -183,7 +183,9 @@
     <ClInclude Include="CoreFuncsLib.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="Game.h" />
-    <ClInclude Include="LightTreeCompute.h" />
+    <ClInclude Include="LightTreeCompute.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="pch.h" />
@@ -191,14 +193,18 @@
     <ClInclude Include="SceneLightingInformation.h" />
     <ClInclude Include="SceneObject.h" />
     <ClInclude Include="StepTimer.h" />
-    <ClInclude Include="VisCompute.h" />
+    <ClInclude Include="VisCompute.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ClippingLib.cpp" />
     <ClCompile Include="CoreFuncsLib.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="Game.cpp" />
-    <ClCompile Include="LightTreeCompute.cpp" />
+    <ClCompile Include="LightTreeCompute.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
@@ -211,7 +217,9 @@
     <ClCompile Include="SceneInformation.cpp" />
     <ClCompile Include="SceneLightingInformation.cpp" />
     <ClCompile Include="SceneObject.cpp" />
-    <ClCompile Include="VisCompute.cpp" />
+    <ClCompile Include="VisCompute.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

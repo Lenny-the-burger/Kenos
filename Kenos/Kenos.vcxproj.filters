@@ -39,12 +39,6 @@
     <ClInclude Include="CoreFuncsLib.h">
       <Filter>Libraries</Filter>
     </ClInclude>
-    <ClInclude Include="VisCompute.h">
-      <Filter>Compute</Filter>
-    </ClInclude>
-    <ClInclude Include="LightTreeCompute.h">
-      <Filter>Compute</Filter>
-    </ClInclude>
     <ClInclude Include="SceneObject.h">
       <Filter>Base classes</Filter>
     </ClInclude>
@@ -59,6 +53,12 @@
     </ClInclude>
     <ClInclude Include="SceneLightingInformation.h">
       <Filter>Compound classes</Filter>
+    </ClInclude>
+    <ClInclude Include="LightTreeCompute.h">
+      <Filter>Compute</Filter>
+    </ClInclude>
+    <ClInclude Include="VisCompute.h">
+      <Filter>Compute</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -83,17 +83,17 @@
     <ClCompile Include="CoreFuncsLib.cpp">
       <Filter>Libraries</Filter>
     </ClCompile>
-    <ClCompile Include="VisCompute.cpp">
-      <Filter>Compute</Filter>
-    </ClCompile>
-    <ClCompile Include="LightTreeCompute.cpp">
-      <Filter>Compute</Filter>
-    </ClCompile>
     <ClCompile Include="SceneInformation.cpp">
       <Filter>Compound classes</Filter>
     </ClCompile>
     <ClCompile Include="SceneLightingInformation.cpp">
       <Filter>Compound classes</Filter>
+    </ClCompile>
+    <ClCompile Include="LightTreeCompute.cpp">
+      <Filter>Compute</Filter>
+    </ClCompile>
+    <ClCompile Include="VisCompute.cpp">
+      <Filter>Compute</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
