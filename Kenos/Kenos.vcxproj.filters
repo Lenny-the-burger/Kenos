@@ -117,13 +117,7 @@
     <None Include="..\README.md">
       <Filter>Misc files</Filter>
     </None>
-    <None Include="scene.json">
-      <Filter>Misc files</Filter>
-    </None>
-    <None Include="icoSphere.json">
-      <Filter>Misc files</Filter>
-    </None>
-    <None Include="floor.json">
+    <None Include="assets\scene.json">
       <Filter>Misc files</Filter>
     </None>
   </ItemGroup>
@@ -131,5 +125,13 @@
     <Text Include="compute_readme.txt">
       <Filter>Compute</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="assets\floor.obj">
+      <Filter>Misc files</Filter>
+    </Media>
+    <Media Include="assets\icoSphere.obj">
+      <Filter>Misc files</Filter>
+    </Media>
   </ItemGroup>
 </Project>
