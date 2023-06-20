@@ -56,12 +56,12 @@ Vector3 SceneObject::GetScale() const
     return m_scale;
 }
 
-void SceneObject::SetMesh(Mesh* mesh)
+void SceneObject::SetMesh(Mesh mesh)
 {
     m_mesh = mesh;
 }
 
-Mesh* SceneObject::GetMesh() const
+Mesh SceneObject::GetMesh() const
 {
     return m_mesh;
 }
@@ -79,8 +79,7 @@ const Material* SceneObject::GetMaterial() const
 // get the final (transformed/scaled/rotated) vertex at index idx
 const Vector3 SceneObject::GetFinalVtx(int idx) const
 {
-    // Retrieve the original vertex at the given index
-    Vector3 vertex = m_mesh->GetVertices()[idx];
+    Vector3 vertex = m_mesh.GetVert(idx);
 
     // Apply transformations (scale, rotation, and translation)
     vertex *= m_scale;                          // Scale

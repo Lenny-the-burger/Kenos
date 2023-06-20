@@ -11,11 +11,11 @@ public:
     ~Mesh();
 
     void SetVertices(const DirectX::SimpleMath::Vector3 vertices[]);
-    const std::vector<DirectX::SimpleMath::Vector3>* GetVertices() const;
+    const DirectX::SimpleMath::Vector3 GetVert(int idx) const;
     int GetVertexCount() const;
 
     void SetIndices(const DirectX::SimpleMath::Vector3 indices[]);
-    const std::vector<DirectX::SimpleMath::Vector3>* GetIndices() const;
+    const DirectX::SimpleMath::Vector3 GetIndex(int idx) const;
     int GetFaceCount() const;
 
 private:

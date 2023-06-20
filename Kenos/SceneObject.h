@@ -23,8 +23,8 @@ public:
     void SetScale(const DirectX::SimpleMath::Vector3& scale);
     DirectX::SimpleMath::Vector3 GetScale() const;
 
-    void SetMesh(Mesh* mesh);
-    Mesh* GetMesh() const;
+    void SetMesh(Mesh mesh);
+    Mesh GetMesh() const;
 
     void SetMaterial(Material* material);
     const Material* GetMaterial() const;
@@ -36,7 +36,7 @@ private:
     DirectX::SimpleMath::Vector3 m_position;
     DirectX::SimpleMath::Vector3 m_rotation;
     DirectX::SimpleMath::Vector3 m_scale;
-    Mesh* m_mesh;
+    Mesh m_mesh;
     Material* m_material;
 };
 
