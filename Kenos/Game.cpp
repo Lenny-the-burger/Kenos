@@ -269,7 +269,7 @@ void Game::CreateDeviceDependentResources()
 
     // Initialize scene geometry and do the initial visibility data and light tree
     // compute here
-	localSceneInformation = SceneInformation("scene.json");
+	localSceneInformation = SceneInformation("assets/scene.json");
     
 }
 

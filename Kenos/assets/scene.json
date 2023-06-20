@@ -1,7 +1,7 @@
 {
   "sceneName": "Test scene",
   "sceneDescription": "This is a test scene",
-  "meshes": [ "icoSphere.json", "floor.json" ],
+  "meshes": [ "assets/icoSphere.obj", "assets/floor.obj" ],
   "materials": [
     {
       "name": "glossy",
@@ -18,14 +18,14 @@
   ],
   "objects": [
     {
-      "mesh": "icoSphere.json",
+      "mesh": "assets/icoSphere.obj",
       "material": "glossy",
       "position": [ 0, 2.5, 0 ],
       "rotation": [ 0, 0, 0 ],
       "scale": [ 1.5, 1.5, 1.5 ]
     },
     {
-      "mesh": "floor.json",
+      "mesh": "assets/floor.obj",
       "material": "floorMaterial",
       "position": [ 0, -1, 0 ],
       "rotation": [ 0, 0, 0 ],
@@ -42,6 +42,6 @@
   "camera": {
     "position": [ 0, 2, -5 ],
     "rotation": [ 0, 0, 0 ],
-    "focalLength": 10
+    "focalLength": 20
   }
 }
