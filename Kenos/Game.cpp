@@ -64,6 +64,7 @@ void Game::Update(DX::StepTimer const& timer)
     float elapsedTime = float(timer.GetElapsedSeconds());
 
     // TODO: Add your game logic here.
+    
     elapsedTime;
 }
 #pragma endregion
@@ -104,8 +105,12 @@ void Game::Render()
     tuple<Vector3, Vector3, Vector3> currTri;
 
 	Vector3 halfScreenVect = Vector3(1920/2, 1080/2, 0);
+
+    Vector3 oldRot = localSceneInformation.getSceneObjects()[0].GetRotation();
+	Vector3 newRot = Vector3(oldRot.x, oldRot.y + 0.01f, oldRot.z);
+	localSceneInformation.getSceneObjects()[0].SetRotation(newRot);
     
-    for (int globalIndex = 0; globalIndex < 10; globalIndex++) {
+    for (int globalIndex = 0; globalIndex < localSceneInformation.getGlobalPolyCount(); globalIndex++) {
 		currTri = localSceneInformation.getTribyGlobalIndex(globalIndex);
         
 		Vector3 v1 = get<0>(currTri);
@@ -122,15 +127,24 @@ void Game::Render()
         v1 = localSceneInformation.untransformFromCam(v1);
 		v2 = localSceneInformation.untransformFromCam(v2);
 		v3 = localSceneInformation.untransformFromCam(v3);
+        
+		v1 *= 100;
+		v2 *= 100;
+		v3 *= 100;
 
 		// assuming a 1920x1080 screen resolution for now
 		v1 += halfScreenVect;
 		v2 += halfScreenVect;
 		v3 += halfScreenVect;
 
-		VertexPositionColor screenv1(v1, Colors::Red);
-		VertexPositionColor screenv2(v2, Colors::Green);
-		VertexPositionColor screenv3(v3, Colors::Blue);
+		// flip the y axis because the screen is upside down for some reason
+		v1.y = 1080 - v1.y;
+		v2.y = 1080 - v2.y;
+		v3.y = 1080 - v3.y;
+
+		VertexPositionColor screenv1(v1, Colors::White);
+		VertexPositionColor screenv2(v2, Colors::White);
+		VertexPositionColor screenv3(v3, Colors::White);
 
 		m_batch->DrawTriangle(screenv1, screenv2, screenv3);
     }
