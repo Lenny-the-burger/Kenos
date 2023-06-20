@@ -2,6 +2,10 @@
 
 #include "SceneInformation.h"
 
+#include <assimp/Importer.hpp>      // C++ importer interface
+#include <assimp/scene.h>           // Output data structure
+#include <assimp/postprocess.h>     // Post processing flags
+
 #include <fstream>
 #include <nlohmann/json.hpp>
 
@@ -53,30 +57,47 @@ SceneInformation::SceneInformation(string filePath) {
 			exit(0);
 		}
 
-
+		// use AssImp to import mesh
 		
-		// Load mesh vertices and faces from json file
-		ifstream meshFile(mesh);
-		json meshData = json::parse(meshFile);
+		Assimp::Importer importer;
+		
+		const aiScene* scene = importer.ReadFile(mesh, aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
 
-		// Load vertices
-		const auto vertsXArr = meshData["verts"][0];
-		const auto vertsYArr = meshData["verts"][1];
-		const auto vertsZArr = meshData["verts"][2];
-		vector<Vector3> verts;
-		for (int i = 0; i < vertsXArr.size(); i++) {
-			verts.push_back(Vector3(vertsXArr[i], vertsYArr[i], vertsZArr[i]));
+		// check if the mesh file is valid
+		if (!scene) {
+			string errorMessage = "Mesh file '" + mesh + "' is invalid!";
+			MessageBoxA(NULL, errorMessage.c_str(), "Fatal error", MB_ICONERROR | MB_OK);
+			exit(0);
 		}
 
-		// Load faces
-		const auto face1Arr = meshData["faces"][0];
-		const auto face2Arr = meshData["faces"][1];
-		const auto face3Arr = meshData["faces"][2];
+		// get the first mesh in the scene
+		aiMesh* aiMesh = scene->mMeshes[0];
+		
+		// create a vector to store the vertices
+		vector<Vector3> verts;
+		// create a vector to store the faces (indices)
 		vector<Vector3> faces;
-		for (int i = 0; i < face1Arr.size(); i++) {
-			// subtract one because the faces are 1-indexed in the json file :(
-			// TODO: fix this when we have proper obj loading
-			faces.push_back(Vector3(face1Arr[i], face2Arr[i], face3Arr[i]) - Vector3(1, 1, 1));
+
+		// scan through all of the vertices in the mesh
+		for (int i = 0; i < aiMesh->mNumVertices; i++) {
+			// get the vertex position
+			aiVector3D aiPos = aiMesh->mVertices[i];
+			// convert the vertex position to a Vector3
+			Vector3 pos = Vector3(aiPos.x, aiPos.y, aiPos.z);
+			// add the vertex position to the vector of vertices
+			verts.push_back(pos);
+		}
+
+		// scan through all of the faces in the mesh
+		for (int i = 0; i < aiMesh->mNumFaces; i++) {
+			// get the face
+			aiFace aiFace = aiMesh->mFaces[i];
+			
+			// get each index from the face and write to a Vector3
+			Vector3 face = Vector3(aiFace.mIndices[0], aiFace.mIndices[1], aiFace.mIndices[2]);
+
+			// add the face to the vector of faces
+			faces.push_back(face);
 		}
 
 		//Add mesh to the list of meshes in the scene
