@@ -159,31 +159,3 @@ void recomputeVisArray(SceneInformation scene) {
 		}
 	}
 }
-
-// return triangle at global index idx
-tuple<Vector3, Vector3, Vector3> getTribyGlobalIndex(int idx) {
-	int currentSO = 0;
-	int accTriCount = 0;
-	for (SceneObject& obj : sceneObjects) {
-		accTriCount += (obj.GetMesh())->GetFaceCount();
-		
-		// if the index is less than the accumulated tri count then we are in range
-		if (idx < accTriCount) {
-			// get the face index vector at position idx - accTriCount
-			Vector3 faceIdxVec = (obj.GetMesh())->GetIndices()[idx - accTriCount];
-
-			// using each element in the index vector construct tuple from GetFinalVtx()
-			return make_tuple(
-				obj.GetFinalVtx((int) faceIdxVec.x), // explicit cast to get rid of warning
-				obj.GetFinalVtx((int) faceIdxVec.y), 
-				obj.GetFinalVtx((int) faceIdxVec.z)
-			);
-
-		}
-
-		// otherwise we need to move on to the next object
-		currentSO++;
-	}
-	throw std::out_of_range("Triangle index out of range");
-}
-
