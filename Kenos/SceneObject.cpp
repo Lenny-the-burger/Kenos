@@ -16,9 +16,9 @@ using Microsoft::WRL::ComPtr;
 
 #include "SceneObject.h"
 
-SceneObject::SceneObject()
-{
-    // Initialize member variables
+SceneObject::SceneObject() {
+	// init material reference
+	
 }
 
 SceneObject::~SceneObject()
@@ -26,7 +26,7 @@ SceneObject::~SceneObject()
     // Perform cleanup, if necessary
 }
 
-void SceneObject::SetPosition(const Vector3& position)
+void SceneObject::SetPosition(const Vector3 position)
 {
     m_position = position;
 }
@@ -36,7 +36,7 @@ const Vector3& SceneObject::GetPosition() const
     return m_position;
 }
 
-void SceneObject::SetRotation(const Vector3& rotation)
+void SceneObject::SetRotation(const Vector3 rotation)
 {
     m_rotation = rotation;
 }
@@ -46,12 +46,12 @@ const Vector3& SceneObject::GetRotation() const
     return m_rotation;
 }
 
-void SceneObject::SetScale(const Vector3& scale)
+void SceneObject::SetScale(const Vector3 scale)
 {
     m_scale = scale;
 }
 
-Vector3 SceneObject::GetScale() const
+const Vector3& SceneObject::GetScale()
 {
     return m_scale;
 }
@@ -61,17 +61,17 @@ void SceneObject::SetMesh(Mesh mesh)
     m_mesh = mesh;
 }
 
-Mesh SceneObject::GetMesh() const
+const Mesh& SceneObject::GetMesh()
 {
     return m_mesh;
 }
 
-void SceneObject::SetMaterial(Material* material)
+void SceneObject::SetMaterial(Material& material)
 {
     m_material = material;
 }
 
-const Material* SceneObject::GetMaterial() const
+const Material& SceneObject::GetMaterial()
 {
     return m_material;
 }
