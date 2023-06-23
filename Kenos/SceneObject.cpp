@@ -83,8 +83,10 @@ const Vector3 SceneObject::GetFinalVtx(int idx) const
 
     // Apply transformations (scale, rotation, and translation)
     vertex *= m_scale;                          // Scale
-    vertex = Vector3::Transform(vertex,         // Rotation
-        Matrix::CreateFromYawPitchRoll(m_rotation.y, m_rotation.x, m_rotation.z));
+    
+	XMVECTOR rotQuat = XMQuaternionRotationRollPitchYaw(m_rotation.x, m_rotation.y, m_rotation.z);
+	vertex = XMVector3Rotate(vertex, rotQuat);  // Rotation
+    
     vertex += m_position;                       // Translation
 
     return vertex;
