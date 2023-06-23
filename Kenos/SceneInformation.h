@@ -59,7 +59,7 @@ public:
 	std::map<std::string, Mesh> getSceneMeshes();
 	std::map<std::string, Material> getSceneMaterials();
 	
-	std::vector<SceneObject> getSceneObjects();
+	std::vector<SceneObject>& getSceneObjects();
 
 	int getGlobalPolyCount();
 

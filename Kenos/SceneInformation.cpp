@@ -109,7 +109,7 @@ SceneInformation::SceneInformation(string filePath) {
 	for (auto& object : data["objects"]) {
 		SceneObject o;
 		o.SetMesh(sceneMeshes[object["mesh"]]);
-		o.SetMaterial(&sceneMaterials[object["material"]]);
+		o.SetMaterial(sceneMaterials[object["material"]]);
 		o.SetPosition(Vector3(object["position"][0], object["position"][1], object["position"][2]));
 		o.SetRotation(Vector3(object["rotation"][0], object["rotation"][1], object["rotation"][2]));
 		o.SetScale(Vector3(object["scale"][0], object["scale"][1], object["scale"][2]));
@@ -250,7 +250,7 @@ map<string, Material> SceneInformation::getSceneMaterials()
 	return sceneMaterials;
 }
 
-vector<SceneObject> SceneInformation::getSceneObjects()
+vector<SceneObject>& SceneInformation::getSceneObjects()
 {
 	return sceneObjects;
 }
