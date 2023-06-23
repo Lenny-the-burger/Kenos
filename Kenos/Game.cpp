@@ -58,15 +58,27 @@ void Game::Tick()
     Render();
 }
 
+float rotTemp = 0;
+
 // Updates the world.
 void Game::Update(DX::StepTimer const& timer)
 {
     float elapsedTime = float(timer.GetElapsedSeconds());
 
     // TODO: Add your game logic here.
+
+    vector<SceneObject>& sceneObjects = localSceneInformation.getSceneObjects();
+    SceneObject& sceneObject = sceneObjects[0];
+    
+	Vector3 newRot = Vector3(rotTemp, 0, 0);
+	sceneObject.SetRotation(newRot);
+
+	rotTemp += 0.01f;
+
     
     elapsedTime;
 }
+
 #pragma endregion
 
 #pragma region Frame Render
@@ -105,10 +117,6 @@ void Game::Render()
     tuple<Vector3, Vector3, Vector3> currTri;
 
 	Vector3 halfScreenVect = Vector3(1920/2, 1080/2, 0);
-
-    Vector3 oldRot = localSceneInformation.getSceneObjects()[0].GetRotation();
-	Vector3 newRot = Vector3(oldRot.x, oldRot.y + 0.01f, oldRot.z);
-	localSceneInformation.getSceneObjects()[0].SetRotation(newRot);
     
     for (int globalIndex = 0; globalIndex < localSceneInformation.getGlobalPolyCount(); globalIndex++) {
 		currTri = localSceneInformation.getTribyGlobalIndex(globalIndex);
@@ -116,6 +124,12 @@ void Game::Render()
 		Vector3 v1 = get<0>(currTri);
 		Vector3 v2 = get<1>(currTri);
 		Vector3 v3 = get<2>(currTri);
+
+        // do backface culling
+		Vector3 normal = (v2 - v1).Cross(v3 - v1);
+		if (normal.Dot(localCamera.focalPoint - (v1 + v2 + v3)/3) < 0) {
+			continue;
+		}
 
         // intersect the camera plane with a line that goes through each vert
         // of the triangle and the focal point
@@ -142,22 +156,16 @@ void Game::Render()
 		v2.y = 1080 - v2.y;
 		v3.y = 1080 - v3.y;
 
-		VertexPositionColor screenv1(v1, Colors::White);
-		VertexPositionColor screenv2(v2, Colors::White);
-		VertexPositionColor screenv3(v3, Colors::White);
+		// Color based on global index
+		float idxRatio = (float)globalIndex / (float)localSceneInformation.getGlobalPolyCount();
+		Color color = Color{ idxRatio, idxRatio, idxRatio };
+
+		VertexPositionColor screenv1(v1, color);
+		VertexPositionColor screenv2(v2, color);
+		VertexPositionColor screenv3(v3, color);
 
 		m_batch->DrawTriangle(screenv1, screenv2, screenv3);
     }
-
-	// access the vertex buffer and one by one draw the triangles
-	/*for (auto& tri : finalTriBuff)
-	{
-        VertexPositionColor v1(Vector3(400.f, 150.f, 0.f), Colors::Red);
-		VertexPositionColor v2(Vector3(400.f, 250.f, 0.f), Colors::Green);
-		VertexPositionColor v3(Vector3(500.f, 250.f, 0.f), Colors::Blue);
-
-		m_batch->DrawTriangle(v1, v2, v3);
-	}*/
 
     m_batch->End();
     // render
