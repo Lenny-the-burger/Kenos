@@ -30,6 +30,20 @@
       "position": [ 0, -1, 0 ],
       "rotation": [ 0, 0, 0 ],
       "scale": [ 1, 1, 1 ]
+    },
+    {
+      "mesh": "assets/icoSphere.obj",
+      "material": "glossy",
+      "position": [ 5, 2.5, 0 ],
+      "rotation": [ 0, 0, 0 ],
+      "scale": [ 1.5, 1.5, 1.5 ]
+    },
+    {
+      "mesh": "assets/icoSphere.obj",
+      "material": "glossy",
+      "position": [ -5, 2.5, 0 ],
+      "rotation": [ 0, 0, 0 ],
+      "scale": [ 1.5, 1.5, 1.5 ]
     }
   ],
   "pointLights": [
