@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Ignore compiled shader files (these need to be copied over for debugger to work)
+*.cso
