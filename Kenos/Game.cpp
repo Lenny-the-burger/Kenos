@@ -13,25 +13,30 @@ using namespace DirectX::SimpleMath;
 
 using Microsoft::WRL::ComPtr;
 
-Game::Game() noexcept(false)
+Game::Game() noexcept :
+    m_window(nullptr),
+    m_outputWidth(800),
+    m_outputHeight(600),
+    m_featureLevel(D3D_FEATURE_LEVEL_11_0)
 {
-    m_deviceResources = std::make_unique<DX::DeviceResources>();
-    // TODO: Provide parameters for swapchain format, depth/stencil format, and backbuffer count.
-    //   Add DX::DeviceResources::c_AllowTearing to opt-in to variable rate displays.
-    //   Add DX::DeviceResources::c_EnableHDR for HDR10 display.
-    m_deviceResources->RegisterDeviceNotify(this);
 }
 
 // Initialize the Direct3D resources required to run.
 void Game::Initialize(HWND window, int width, int height)
 {
-    m_deviceResources->SetWindow(window, width, height);
+    m_window = window;
+    m_outputWidth = std::max(width, 1);
+    m_outputHeight = std::max(height, 1);
 
-    m_deviceResources->CreateDeviceResources();
-    CreateDeviceDependentResources();
+    CreateDevice();
 
-    m_deviceResources->CreateWindowSizeDependentResources();
-    CreateWindowSizeDependentResources();
+    CreateResources();
+
+    LoadShaders(L"vertex.cso", L"pixel.cso");
+
+    CreateLayout();
+
+    InitVertexBuffer();
 
     // TODO: Change the timer settings if you want something other than the default variable timestep mode.
     // e.g. for 60 FPS fixed timestep update logic, call:
@@ -41,10 +46,85 @@ void Game::Initialize(HWND window, int width, int height)
     */
 }
 
+#pragma region Pipeline initiliazation
+void Game::InitVertexBuffer() {
+	// Here will also trigger the light tree construction
+
+    float vertex_data_array[] = {
+         0.0f,  0.5f,  0.0f, // point at top
+         0.5f, -0.5f,  0.0f, // point at bottom-right
+        -0.5f, -0.5f,  0.0f, // point at bottom-left
+    };
+    vertex_stride = 3 * sizeof(float);
+    vertex_offset = 0;
+    vertex_count = 3;
+
+    D3D11_BUFFER_DESC vertex_buff_descr = {};
+    
+    vertex_buff_descr.ByteWidth = sizeof(vertex_data_array);
+    vertex_buff_descr.Usage = D3D11_USAGE_DEFAULT;
+    vertex_buff_descr.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    
+    D3D11_SUBRESOURCE_DATA sr_data = { 0 };
+    sr_data.pSysMem = vertex_data_array;
+    
+    HRESULT hr = m_d3dDevice->CreateBuffer(
+        &vertex_buff_descr,
+        &sr_data,
+        &vertex_buffer_ptr);
+    assert(SUCCEEDED(hr));
+}
+
+void Game::CreateLayout()
+{   
+    D3D11_INPUT_ELEMENT_DESC inputElementDesc[] = {
+      { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+      // TODO: Add more here
+    };
+    HRESULT hr = m_d3dDevice->CreateInputLayout(
+        inputElementDesc,
+        ARRAYSIZE(inputElementDesc),
+        vertex_shader_blob->GetBufferPointer(),
+        vertex_shader_blob->GetBufferSize(),
+        &input_layout_ptr);
+    assert(SUCCEEDED(hr));
+}
+
+/* Function to load compiled shaders
+* !! Shader version must be xs_4_0, xs_4_1, or xs_5_0 !!
+*/
+void Game::LoadShaders(const wchar_t* vs_path, const wchar_t* ps_path)
+{
+    // Load compiled vertex shader
+    HRESULT result = D3DReadFileToBlob(vs_path, &vertex_shader_blob);
+    assert(SUCCEEDED(result) && "Failed to load vertex shader bytecode.");
+
+    // Create vertex shader
+    result = m_d3dDevice->CreateVertexShader(
+        vertex_shader_blob->GetBufferPointer(),
+        vertex_shader_blob->GetBufferSize(),
+        nullptr,
+        &vertex_shader_ptr);
+    assert(SUCCEEDED(result) && "Failed to create vertex shader.");
+
+    // Load compiled pixel shader
+    result = D3DReadFileToBlob(ps_path, &pixel_shader_blob);
+    assert(SUCCEEDED(result) && "Failed to load pixel shader bytecode.");
+
+    // Create pixel shader
+    result = m_d3dDevice->CreatePixelShader(
+        pixel_shader_blob->GetBufferPointer(), 
+        pixel_shader_blob->GetBufferSize(), 
+        nullptr, 
+        &pixel_shader_ptr);
+    assert(SUCCEEDED(result) && "Failed to create pixel shader.");
+}
+
 SceneInformation Game::GetSceneInformation() const noexcept
 {
 	return localSceneInformation;
 }
+#pragma endregion
 
 #pragma region Frame Update
 // Executes the basic game loop.
@@ -65,16 +145,7 @@ void Game::Update(DX::StepTimer const& timer)
 {
     float elapsedTime = float(timer.GetElapsedSeconds());
 
-    // TODO: Add your game logic here.
-
-    vector<SceneObject>& sceneObjects = localSceneInformation.getSceneObjects();
-    SceneObject& sceneObject = sceneObjects[0];
-    
-	Vector3 newRot = Vector3(rotTemp, 0, 0);
-	sceneObject.SetRotation(newRot);
-
-	rotTemp += 0.01f;
-
+    // TODO: Add your game logic here
     
     elapsedTime;
 }
@@ -93,111 +164,55 @@ void Game::Render()
 
     Clear();
 
-    m_deviceResources->PIXBeginEvent(L"Render");
-    auto context = m_deviceResources->GetD3DDeviceContext();
-
-
-    // render
-    context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
-    context->OMSetDepthStencilState(m_states->DepthNone(), 0);
-    context->RSSetState(m_states->CullNone());
-
-    m_effect->Apply(context);
-
-    context->IASetInputLayout(m_inputLayout.Get());
-
-    m_batch->Begin();
+    // Start rendering
+    m_d3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
+    m_d3dContext->IASetInputLayout( input_layout_ptr );
+    m_d3dContext->IASetVertexBuffers(
+        0,
+        1,
+        &vertex_buffer_ptr,
+        &vertex_stride,
+        &vertex_offset);
     
+    m_d3dContext->VSSetShader(vertex_shader_ptr, NULL, 0);
+    m_d3dContext->PSSetShader(pixel_shader_ptr, NULL, 0);
     
+    m_d3dContext->Draw(vertex_count, 0);
     
-	Camera localCamera = localSceneInformation.getCam();
-
-	XMVECTOR camPlane = XMPlaneFromPoints(localCamera.Apos, localCamera.Bpos, localCamera.Cpos);
-    
-    tuple<Vector3, Vector3, Vector3> currTri;
-
-	Vector3 halfScreenVect = Vector3(1920/2, 1080/2, 0);
-    
-    for (int globalIndex = 0; globalIndex < localSceneInformation.getGlobalPolyCount(); globalIndex++) {
-		currTri = localSceneInformation.getTribyGlobalIndex(globalIndex);
-        
-		Vector3 v1 = get<0>(currTri);
-		Vector3 v2 = get<1>(currTri);
-		Vector3 v3 = get<2>(currTri);
-
-        // do backface culling
-		Vector3 normal = (v2 - v1).Cross(v3 - v1);
-		if (normal.Dot(localCamera.focalPoint - (v1 + v2 + v3)/3) < 0) {
-			continue;
-		}
-
-        // intersect the camera plane with a line that goes through each vert
-        // of the triangle and the focal point
-		v1 = XMPlaneIntersectLine(camPlane, localCamera.focalPoint, v1);
-		v2 = XMPlaneIntersectLine(camPlane, localCamera.focalPoint, v2);
-		v3 = XMPlaneIntersectLine(camPlane, localCamera.focalPoint, v3);
-
-		// normalize points
-        v1 = localSceneInformation.untransformFromCam(v1);
-		v2 = localSceneInformation.untransformFromCam(v2);
-		v3 = localSceneInformation.untransformFromCam(v3);
-        
-		v1 *= 100;
-		v2 *= 100;
-		v3 *= 100;
-
-		// assuming a 1920x1080 screen resolution for now
-		v1 += halfScreenVect;
-		v2 += halfScreenVect;
-		v3 += halfScreenVect;
-
-		// flip the y axis because the screen is upside down for some reason
-		v1.y = 1080 - v1.y;
-		v2.y = 1080 - v2.y;
-		v3.y = 1080 - v3.y;
-
-		// Color based on global index
-		float idxRatio = (float)globalIndex / (float)localSceneInformation.getGlobalPolyCount();
-		Color color = Color{ idxRatio, idxRatio, idxRatio };
-
-		VertexPositionColor screenv1(v1, color);
-		VertexPositionColor screenv2(v2, color);
-		VertexPositionColor screenv3(v3, color);
-
-		m_batch->DrawTriangle(screenv1, screenv2, screenv3);
-    }
-
-    m_batch->End();
-    // render
-    
-    
-    context;
-
-    m_deviceResources->PIXEndEvent();
-
-    // Show the new frame.
-    m_deviceResources->Present();
+    Present();
 }
 
 // Helper method to clear the back buffers.
 void Game::Clear()
 {
-    m_deviceResources->PIXBeginEvent(L"Clear");
-
     // Clear the views.
-    auto context = m_deviceResources->GetD3DDeviceContext();
-    auto renderTarget = m_deviceResources->GetRenderTargetView();
-    auto depthStencil = m_deviceResources->GetDepthStencilView();
+    m_d3dContext->ClearRenderTargetView(m_renderTargetView.Get(), Colors::CornflowerBlue);
+    m_d3dContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-    context->ClearRenderTargetView(renderTarget, Colors::CornflowerBlue);
-    context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-    context->OMSetRenderTargets(1, &renderTarget, depthStencil);
+    m_d3dContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
 
     // Set the viewport.
-    auto const viewport = m_deviceResources->GetScreenViewport();
-    context->RSSetViewports(1, &viewport);
+    D3D11_VIEWPORT viewport = { 0.0f, 0.0f, static_cast<float>(m_outputWidth), static_cast<float>(m_outputHeight), 0.f, 1.f };
+    m_d3dContext->RSSetViewports(1, &viewport);
+}
 
-    m_deviceResources->PIXEndEvent();
+// Presents the back buffer contents to the screen.
+void Game::Present()
+{
+    // The first argument instructs DXGI to block until VSync, putting the application
+    // to sleep until the next VSync. This ensures we don't waste any cycles rendering
+    // frames that will never be displayed to the screen.
+    HRESULT hr = m_swapChain->Present(1, 0);
+
+    // If the device was reset we must completely reinitialize the renderer.
+    if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
+    {
+        OnDeviceLost();
+    }
+    else
+    {
+        DX::ThrowIfFailed(hr);
+    }
 }
 #pragma endregion
 
@@ -225,23 +240,12 @@ void Game::OnResuming()
     // TODO: Game is being power-resumed (or returning from minimize).
 }
 
-void Game::OnWindowMoved()
-{
-    auto const r = m_deviceResources->GetOutputSize();
-    m_deviceResources->WindowSizeChanged(r.right, r.bottom);
-}
-
-void Game::OnDisplayChange()
-{
-    m_deviceResources->UpdateColorSpace();
-}
-
 void Game::OnWindowSizeChanged(int width, int height)
 {
-    if (!m_deviceResources->WindowSizeChanged(width, height))
-        return;
+    m_outputWidth = std::max(width, 1);
+    m_outputHeight = std::max(height, 1);
 
-    CreateWindowSizeDependentResources();
+    CreateResources();
 
     // TODO: Game window is being resized.
 }
@@ -255,55 +259,180 @@ void Game::GetDefaultSize(int& width, int& height) const noexcept
 }
 #pragma endregion
 
-#pragma region Direct3D Resources
+#pragma region Device resources
 // These are the resources that depend on the device.
-void Game::CreateDeviceDependentResources()
+void Game::CreateDevice()
 {
-    auto device = m_deviceResources->GetD3DDevice();
+    UINT creationFlags = 0;
 
-    m_states = std::make_unique<CommonStates>(device);
+#ifdef _DEBUG
+    creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
 
-    m_effect = std::make_unique<BasicEffect>(device);
-    m_effect->SetVertexColorEnabled(true);
+    static const D3D_FEATURE_LEVEL featureLevels[] =
+    {
+        // TODO: Modify for supported Direct3D feature levels
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_10_1,
+        D3D_FEATURE_LEVEL_10_0,
+        D3D_FEATURE_LEVEL_9_3,
+        D3D_FEATURE_LEVEL_9_2,
+        D3D_FEATURE_LEVEL_9_1,
+    };
 
-    DX::ThrowIfFailed(
-        CreateInputLayoutFromEffect<VertexType>(device, m_effect.get(),
-            m_inputLayout.ReleaseAndGetAddressOf())
-    );
+    // Create the DX11 API device object, and get a corresponding context.
+    ComPtr<ID3D11Device> device;
+    ComPtr<ID3D11DeviceContext> context;
+    DX::ThrowIfFailed(D3D11CreateDevice(
+        nullptr,                            // specify nullptr to use the default adapter
+        D3D_DRIVER_TYPE_HARDWARE,
+        nullptr,
+        creationFlags,
+        featureLevels,
+        static_cast<UINT>(std::size(featureLevels)),
+        D3D11_SDK_VERSION,
+        device.ReleaseAndGetAddressOf(),    // returns the Direct3D device created
+        &m_featureLevel,                    // returns feature level of device created
+        context.ReleaseAndGetAddressOf()    // returns the device immediate context
+    ));
 
-    auto context = m_deviceResources->GetD3DDeviceContext();
-    m_batch = std::make_unique<PrimitiveBatch<VertexType>>(context);
-    
+#ifndef NDEBUG
+    ComPtr<ID3D11Debug> d3dDebug;
+    if (SUCCEEDED(device.As(&d3dDebug)))
+    {
+        ComPtr<ID3D11InfoQueue> d3dInfoQueue;
+        if (SUCCEEDED(d3dDebug.As(&d3dInfoQueue)))
+        {
+#ifdef _DEBUG
+            d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
+            d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
+#endif
+            D3D11_MESSAGE_ID hide[] =
+            {
+                D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
+                // TODO: Add more message IDs here as needed.
+            };
+            D3D11_INFO_QUEUE_FILTER filter = {};
+            filter.DenyList.NumIDs = static_cast<UINT>(std::size(hide));
+            filter.DenyList.pIDList = hide;
+            d3dInfoQueue->AddStorageFilterEntries(&filter);
+        }
+    }
+#endif
 
-    // Initialize scene geometry and do the initial visibility data and light tree
-    // compute here
-	localSceneInformation = SceneInformation("assets/scene.json");
-    
+    DX::ThrowIfFailed(device.As(&m_d3dDevice));
+    DX::ThrowIfFailed(context.As(&m_d3dContext));
+
+    // TODO: Initialize device dependent objects here (independent of window size).
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
-void Game::CreateWindowSizeDependentResources()
+void Game::CreateResources()
 {
-    auto size = m_deviceResources->GetOutputSize();
+    // Clear the previous window size specific context.
+    m_d3dContext->OMSetRenderTargets(0, nullptr, nullptr);
+    m_renderTargetView.Reset();
+    m_depthStencilView.Reset();
+    m_d3dContext->Flush();
 
-    Matrix proj = Matrix::CreateScale(2.f / float(size.right),
-        -2.f / float(size.bottom), 1.f)
-        * Matrix::CreateTranslation(-1.f, 1.f, 0.f);
-    m_effect->SetProjection(proj);
+    const UINT backBufferWidth = static_cast<UINT>(m_outputWidth);
+    const UINT backBufferHeight = static_cast<UINT>(m_outputHeight);
+    const DXGI_FORMAT backBufferFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
+    const DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    constexpr UINT backBufferCount = 2;
+
+    // If the swap chain already exists, resize it, otherwise create one.
+    if (m_swapChain)
+    {
+        HRESULT hr = m_swapChain->ResizeBuffers(backBufferCount, backBufferWidth, backBufferHeight, backBufferFormat, 0);
+
+        if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
+        {
+            // If the device was removed for any reason, a new device and swap chain will need to be created.
+            OnDeviceLost();
+
+            // Everything is set up now. Do not continue execution of this method. OnDeviceLost will reenter this method 
+            // and correctly set up the new device.
+            return;
+        }
+        else
+        {
+            DX::ThrowIfFailed(hr);
+        }
+    }
+    else
+    {
+        // First, retrieve the underlying DXGI Device from the D3D Device.
+        ComPtr<IDXGIDevice1> dxgiDevice;
+        DX::ThrowIfFailed(m_d3dDevice.As(&dxgiDevice));
+
+        // Identify the physical adapter (GPU or card) this device is running on.
+        ComPtr<IDXGIAdapter> dxgiAdapter;
+        DX::ThrowIfFailed(dxgiDevice->GetAdapter(dxgiAdapter.GetAddressOf()));
+
+        // And obtain the factory object that created it.
+        ComPtr<IDXGIFactory2> dxgiFactory;
+        DX::ThrowIfFailed(dxgiAdapter->GetParent(IID_PPV_ARGS(dxgiFactory.GetAddressOf())));
+
+        // Create a descriptor for the swap chain.
+        DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+        swapChainDesc.Width = backBufferWidth;
+        swapChainDesc.Height = backBufferHeight;
+        swapChainDesc.Format = backBufferFormat;
+        swapChainDesc.SampleDesc.Count = 1;
+        swapChainDesc.SampleDesc.Quality = 0;
+        swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        swapChainDesc.BufferCount = backBufferCount;
+
+        DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsSwapChainDesc = {};
+        fsSwapChainDesc.Windowed = TRUE;
+
+        // Create a SwapChain from a Win32 window.
+        DX::ThrowIfFailed(dxgiFactory->CreateSwapChainForHwnd(
+            m_d3dDevice.Get(),
+            m_window,
+            &swapChainDesc,
+            &fsSwapChainDesc,
+            nullptr,
+            m_swapChain.ReleaseAndGetAddressOf()
+        ));
+
+        // This template does not support exclusive fullscreen mode and prevents DXGI from responding to the ALT+ENTER shortcut.
+        DX::ThrowIfFailed(dxgiFactory->MakeWindowAssociation(m_window, DXGI_MWA_NO_ALT_ENTER));
+    }
+
+    // Obtain the backbuffer for this window which will be the final 3D rendertarget.
+    ComPtr<ID3D11Texture2D> backBuffer;
+    DX::ThrowIfFailed(m_swapChain->GetBuffer(0, IID_PPV_ARGS(backBuffer.GetAddressOf())));
+
+    // Create a view interface on the rendertarget to use on bind.
+    DX::ThrowIfFailed(m_d3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, m_renderTargetView.ReleaseAndGetAddressOf()));
+
+    // Allocate a 2-D surface as the depth/stencil buffer and
+    // create a DepthStencil view on this surface to use on bind.
+    CD3D11_TEXTURE2D_DESC depthStencilDesc(depthBufferFormat, backBufferWidth, backBufferHeight, 1, 1, D3D11_BIND_DEPTH_STENCIL);
+
+    ComPtr<ID3D11Texture2D> depthStencil;
+    DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, depthStencil.GetAddressOf()));
+
+    DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(depthStencil.Get(), nullptr, m_depthStencilView.ReleaseAndGetAddressOf()));
+
+    // TODO: Initialize windows-size dependent objects here.
 }
 
 void Game::OnDeviceLost()
 {
-    m_states.reset();
-    m_effect.reset();
-    m_batch.reset();
-    m_inputLayout.Reset();
-}
+    // TODO: Add Direct3D resource cleanup here.
 
-void Game::OnDeviceRestored()
-{
-    CreateDeviceDependentResources();
+    m_depthStencilView.Reset();
+    m_renderTargetView.Reset();
+    m_swapChain.Reset();
+    m_d3dContext.Reset();
+    m_d3dDevice.Reset();
 
-    CreateWindowSizeDependentResources();
+    CreateDevice();
+
+    CreateResources();
 }
 #pragma endregion
