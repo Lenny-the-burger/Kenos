@@ -38,11 +38,13 @@ struct RadianceDistributionFunction {
 // Screen space version of the RDF, only used in final rendering
 struct ScreeSpaceRDF {
 	
-	std::tuple<DXVector2, DXVector2, DXVector2> bounds;
+	std::tuple<DXVector3, DXVector3, DXVector3> bounds;
 	
 	std::vector<float> stdev;
 
 	DXColor color;
+
+	std::vector<float> stdev;
 
 };
 
