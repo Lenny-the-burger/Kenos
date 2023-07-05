@@ -23,14 +23,17 @@
     <Filter Include="Common">
       <UniqueIdentifier>2ba0d2ad-69e0-48b2-943c-0db5f7b7736e</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{65be835d-2404-4421-9017-89a1ba61fea9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="eternal refs">
+      <UniqueIdentifier>{175f7376-c109-43e5-bab4-299caefe60e2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="StepTimer.h">
-      <Filter>Common</Filter>
-    </ClInclude>
-    <ClInclude Include="DeviceResources.h">
       <Filter>Common</Filter>
     </ClInclude>
     <ClInclude Include="ClippingLib.h">
@@ -60,14 +63,17 @@
     <ClInclude Include="VisCompute.h">
       <Filter>Compute</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Direct3D Win32 test\Direct3D Win32 test\Game.h">
+      <Filter>eternal refs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Direct3D Win32 test\Direct3D Win32 test\pch.h">
+      <Filter>eternal refs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="DeviceResources.cpp">
-      <Filter>Common</Filter>
-    </ClCompile>
     <ClCompile Include="Material.cpp">
       <Filter>Base classes</Filter>
     </ClCompile>
@@ -95,6 +101,15 @@
     <ClCompile Include="VisCompute.cpp">
       <Filter>Compute</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Direct3D Win32 test\Direct3D Win32 test\Game.cpp">
+      <Filter>eternal refs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Direct3D Win32 test\Direct3D Win32 test\Main.cpp">
+      <Filter>eternal refs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Direct3D Win32 test\Direct3D Win32 test\pch.cpp">
+      <Filter>eternal refs</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -120,6 +135,12 @@
     <None Include="assets\scene.json">
       <Filter>Misc files</Filter>
     </None>
+    <None Include="..\.gitattributes">
+      <Filter>Misc files</Filter>
+    </None>
+    <None Include="..\.gitignore">
+      <Filter>Misc files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="compute_readme.txt">
@@ -133,5 +154,13 @@
     <Media Include="assets\icoSphere.obj">
       <Filter>Misc files</Filter>
     </Media>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="vertex.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="pixel.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
