@@ -39,11 +39,9 @@ struct RadianceDistributionFunction {
 struct ScreeSpaceRDF {
 	
 	std::tuple<DXVector3, DXVector3, DXVector3> bounds;
-	
-	std::vector<float> stdev;
 
 	DXColor color;
-
+	
 	std::vector<float> stdev;
 
 };
@@ -51,10 +49,10 @@ struct ScreeSpaceRDF {
 class SceneLightingInformation
 {
 public:
-	SceneLightingInformation();
+	SceneLightingInformation(SceneInformation& newScene);
 	~SceneLightingInformation();
 	
-	void SetScene(SceneInformation* newScene);
+	void SetScene(SceneInformation& newScene);
 
 	// Rebuilds the entire light tree, this is usually only done at startup.
 	void BuildLightTree();
@@ -72,7 +70,7 @@ public:
 	
 	
 private:
-	SceneInformation* scene;
+	SceneInformation& scene;
 	
 	int globalPolyCount;
 

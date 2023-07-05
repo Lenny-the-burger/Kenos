@@ -6,23 +6,24 @@ using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
 
-SceneLightingInformation::SceneLightingInformation()
+SceneLightingInformation::SceneLightingInformation(SceneInformation& newScene) : scene(newScene)
 {
 	// initialize memebr vars so vs dont complain
 	scene = nullptr;
 	globalPolyCount = 0;
 }
 
+
 SceneLightingInformation::~SceneLightingInformation()
 {
 }
 
-void SceneLightingInformation::SetScene(SceneInformation* newScene)
+void SceneLightingInformation::SetScene(SceneInformation& newScene)
 {
 	scene = newScene;
 
 	// recalculate the global poly count
-	vector<SceneObject> sceneObjects = scene->getSceneObjects();
+	vector<SceneObject> sceneObjects = scene.getSceneObjects();
 
 	// count globalpolycount
 	for (SceneObject& obj : sceneObjects) {
@@ -31,6 +32,8 @@ void SceneLightingInformation::SetScene(SceneInformation* newScene)
 }
 
 void SceneLightingInformation::BuildLightTree() {
+	// for now we will use stdev = 125 * dist for the FRDF
+	// probably wrong but seems correct so lol
 
 }
 
