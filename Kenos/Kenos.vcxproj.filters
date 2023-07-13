@@ -156,11 +156,8 @@
     </Media>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="vertex.hlsl">
+    <CustomBuild Include="shaders.hlsl">
       <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="pixel.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
+    </CustomBuild>
   </ItemGroup>
 </Project>
