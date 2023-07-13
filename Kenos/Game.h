@@ -15,6 +15,9 @@
 #include <vector>
 #include <map>
 
+#define WINDOW_SIZE_W 1000
+#define WINDOW_SIZE_H 800
+
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
 class Game final

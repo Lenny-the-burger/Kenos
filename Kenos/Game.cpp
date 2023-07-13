@@ -15,8 +15,8 @@ using Microsoft::WRL::ComPtr;
 
 Game::Game() noexcept :
     m_window(nullptr),
-    m_outputWidth(800),
-    m_outputHeight(600),
+    m_outputWidth(WINDOW_SIZE_W),
+    m_outputHeight(WINDOW_SIZE_H),
     m_featureLevel(D3D_FEATURE_LEVEL_11_0)
 {
 }
@@ -254,8 +254,8 @@ void Game::OnWindowSizeChanged(int width, int height)
 void Game::GetDefaultSize(int& width, int& height) const noexcept
 {
     // TODO: Change to desired default window size (note minimum size is 320x200).
-    width = 800;
-    height = 600;
+    width = WINDOW_SIZE_W;
+	height = WINDOW_SIZE_H;
 }
 #pragma endregion
 
