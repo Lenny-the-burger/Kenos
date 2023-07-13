@@ -135,7 +135,20 @@ SceneInformation::SceneInformation(string filePath) {
 	cam.focalPoint = camPos + Vector3(0, 0, -camFocalLength);
 
 	rotateCamera(camRot);
-	
+
+	// Set the scene size
+	if (data["sceneSize"] == "small") {
+		size = KS_SCENESIZE_SMALL;
+	}
+	else if (data["sceneSize"] == "medium") {
+		size = KS_SCENESIZE_MEDIUM;
+	}
+	else if (data["sceneSize"] == "large") {
+		size = KS_SCENESIZE_LARGE;
+	}
+	else {
+		size = KS_SCENESIZE_MEDIUM;
+	}
 };
 
 SceneInformation::~SceneInformation() {
@@ -147,6 +160,10 @@ DXVector3 SceneInformation::untransformFromCam(DXVector3 vect) {
 	vect -= cam.Apos;
 	vect = XMVector3Rotate(vect, invQuat);
 	return vect;
+}
+
+SceneSize SceneInformation::getSceneSize() {
+	return size;
 }
 
 int SceneInformation::getGlobalPolyCount() {

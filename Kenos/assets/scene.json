@@ -1,6 +1,7 @@
 {
   "sceneName": "Test scene",
   "sceneDescription": "This is a test scene",
+  "sceneSize":  "small",
   "meshes": [ "assets/icoSphere.obj", "assets/floor.obj" ],
   "materials": [
     {

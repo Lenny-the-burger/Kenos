@@ -44,6 +44,18 @@ struct Camera {
 	DirectX::XMVECTOR prevRotQuat;
 };
 
+enum SceneSize
+{
+	// Small scene, allocate enough buffer to hold all the triangles
+	KS_SCENESIZE_SMALL,
+	// Medium scene, allocate enough buffer to hold half of the triangles, backface culling assumed
+	// effective.
+	KS_SCENESIZE_MEDIUM,
+	// Large scene, allocate enough buffer to hold a quarter of the triangles, backface culling assumed
+	// effective as well as frustum culling.
+	KS_SCENESIZE_LARGE
+};
+
 class SceneInformation
 {
 public:
@@ -62,6 +74,8 @@ public:
 	std::vector<SceneObject>& getSceneObjects();
 
 	int getGlobalPolyCount();
+
+	SceneSize getSceneSize();
 
 	// return triangle at global index idx
 	std::tuple<DXVector3, DXVector3, DXVector3> getTribyGlobalIndex(int idx);
@@ -92,6 +106,8 @@ private:
 	std::string scenePath;
 
 	Camera cam;
+
+	SceneSize size;
 
 	int globalPolyCount;
 };
