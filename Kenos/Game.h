@@ -6,11 +6,13 @@
 
 #include "StepTimer.h"
 #include "d3dcompiler.h"
+#include <stdio.h>
 
 #include "Mesh.h"
 #include "Material.h"
 #include "SceneObject.h"
 #include "SceneInformation.h"
+#include "SceneLightingInformation.h"
 
 #include <vector>
 #include <map>
@@ -49,6 +51,7 @@ public:
     // Properties
     void GetDefaultSize(int& width, int& height) const noexcept;
 	
+    void SetShouldUpdate(bool should);
 
 private:
 
@@ -63,9 +66,12 @@ private:
 
     void OnDeviceLost();
 
+    HRESULT CompileShader(_In_ LPCWSTR srcFile, _In_ LPCSTR entryPoint, _In_ LPCSTR profile, _Outptr_ ID3DBlob** blob);
     void LoadShaders(const wchar_t* vs_path, const wchar_t* ps_path);
     void CreateLayout();
     void InitVertexBuffer();
+
+    void MapNewBufferData();
     
     // Scene information
     SceneInformation GetSceneInformation() const noexcept;
@@ -88,6 +94,10 @@ private:
 
     // Scene information
     SceneInformation localSceneInformation;
+	SceneLightingInformation localSceneLightingInformation;
+
+    // does vertex buffer need to be rewritten? saves time when camera isnt moved
+    bool buffer_should_update;
 
     // Flags used for internal stuff
     UINT flags;
@@ -107,4 +117,9 @@ private:
     UINT vertex_stride;
     UINT vertex_offset;
     UINT vertex_count;
+
+    // write unindexed vertex data to this in 3s, this will be written to the 
+    // buffer when buffer_should_update == true. Remember to also 
+    /*float& new_vertex_buffer_data_ptr;*/
 };
+;

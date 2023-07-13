@@ -28,6 +28,10 @@ void Game::Initialize(HWND window, int width, int height)
     m_outputWidth = std::max(width, 1);
     m_outputHeight = std::max(height, 1);
 
+	localSceneInformation = SceneInformation("assets/scene.json");
+	localSceneLightingInformation.SetScene(localSceneInformation);
+	localSceneLightingInformation.SetScreenRatio((float) m_outputWidth/m_outputHeight);
+
     CreateDevice();
 
     CreateResources();
@@ -37,6 +41,9 @@ void Game::Initialize(HWND window, int width, int height)
     CreateLayout();
 
     InitVertexBuffer();
+
+    localSceneLightingInformation.BuildLightTree();
+	buffer_should_update = true;
 
     // TODO: Change the timer settings if you want something other than the default variable timestep mode.
     // e.g. for 60 FPS fixed timestep update logic, call:
@@ -48,38 +55,73 @@ void Game::Initialize(HWND window, int width, int height)
 
 #pragma region Pipeline initiliazation
 void Game::InitVertexBuffer() {
-	// Here will also trigger the light tree construction
 
-    float vertex_data_array[] = {
-         0.0f,  0.5f,  0.0f, // point at top
-         0.5f, -0.5f,  0.0f, // point at bottom-right
-        -0.5f, -0.5f,  0.0f, // point at bottom-left
-    };
-    vertex_stride = 3 * sizeof(float);
-    vertex_offset = 0;
-    vertex_count = 3;
+	int faceCount = localSceneInformation.getGlobalPolyCount();
+    vertex_count = faceCount * 3;
+    
+    int element_amount;
+
+    switch (localSceneInformation.getSceneSize()) {
+    case KS_SCENESIZE_SMALL:
+		// allocate enough space to store every triangle in the scene
+        element_amount = vertex_count;
+		break;
+
+	case KS_SCENESIZE_MEDIUM:
+		// allocate enough space to store every other triangle in the scene, some will be
+		// culled through backface culling
+        element_amount = vertex_count / 2;
+		break;
+
+	case KS_SCENESIZE_LARGE:
+		// allocate enough space to store every fourth triangle in the scene, some will be
+		// culled through backface culling and frustum culling
+        element_amount = vertex_count / 4;
+		break;
+        
+	default:
+        element_amount = vertex_count;
+		break;
+    }
+    
+	//                                  POSITION             COLOR
+	UINT bufferSize = element_amount * (3 * sizeof(float) +  3 * sizeof(float));
+
+    vertex_stride = 3 * sizeof(float) + 3 * sizeof(float);
+	vertex_offset = 0;
 
     D3D11_BUFFER_DESC vertex_buff_descr = {};
     
-    vertex_buff_descr.ByteWidth = sizeof(vertex_data_array);
-    vertex_buff_descr.Usage = D3D11_USAGE_DEFAULT;
+    vertex_buff_descr.ByteWidth = bufferSize;
+    vertex_buff_descr.Usage = D3D11_USAGE_DYNAMIC;
+    vertex_buff_descr.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     vertex_buff_descr.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     
-    D3D11_SUBRESOURCE_DATA sr_data = { 0 };
-    sr_data.pSysMem = vertex_data_array;
+
+
+	float* temp_data = new float[bufferSize/sizeof(float)];
+
+    D3D11_SUBRESOURCE_DATA vertexBufferData;
+    vertexBufferData.pSysMem = temp_data;
+    vertexBufferData.SysMemPitch = 0;
+    vertexBufferData.SysMemSlicePitch = 0;
     
     HRESULT hr = m_d3dDevice->CreateBuffer(
         &vertex_buff_descr,
-        &sr_data,
+        &vertexBufferData,
         &vertex_buffer_ptr);
     assert(SUCCEEDED(hr));
+
+	// cleanup temp data
+	delete[] temp_data;
 }
 
 void Game::CreateLayout()
 {   
     D3D11_INPUT_ELEMENT_DESC inputElementDesc[] = {
-      { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-      // TODO: Add more here
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+      
     };
     HRESULT hr = m_d3dDevice->CreateInputLayout(
         inputElementDesc,
@@ -113,11 +155,52 @@ void Game::LoadShaders(const wchar_t* vs_path, const wchar_t* ps_path)
 
     // Create pixel shader
     result = m_d3dDevice->CreatePixelShader(
-        pixel_shader_blob->GetBufferPointer(), 
-        pixel_shader_blob->GetBufferSize(), 
-        nullptr, 
+        pixel_shader_blob->GetBufferPointer(),
+        pixel_shader_blob->GetBufferSize(),
+        nullptr,
         &pixel_shader_ptr);
     assert(SUCCEEDED(result) && "Failed to create pixel shader.");
+}
+
+HRESULT Game::CompileShader(_In_ LPCWSTR srcFile, _In_ LPCSTR entryPoint, _In_ LPCSTR profile, _Outptr_ ID3DBlob** blob)
+{
+    if (!srcFile || !entryPoint || !profile || !blob)
+        return E_INVALIDARG;
+
+    *blob = nullptr;
+
+    flags = D3DCOMPILE_ENABLE_STRICTNESS;
+#if defined( DEBUG ) || defined( _DEBUG )
+    flags |= D3DCOMPILE_DEBUG;
+#endif
+
+    const D3D_SHADER_MACRO defines[] =
+    {
+        NULL, NULL
+    };
+
+    ID3DBlob* shaderBlob = nullptr;
+    ID3DBlob* errorBlob = nullptr;
+    HRESULT hr = D3DCompileFromFile(srcFile, defines, D3D_COMPILE_STANDARD_FILE_INCLUDE,
+        entryPoint, profile,
+        flags, 0, &shaderBlob, &errorBlob);
+    if (FAILED(hr))
+    {
+        if (errorBlob)
+        {
+            OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+            errorBlob->Release();
+        }
+
+        if (shaderBlob)
+            shaderBlob->Release();
+
+        return hr;
+    }
+
+    *blob = shaderBlob;
+
+    return hr;
 }
 
 SceneInformation Game::GetSceneInformation() const noexcept
@@ -135,6 +218,14 @@ void Game::Tick()
         Update(m_timer);
     });
 
+    // Everything that happens from here until we are done rendering the frame will
+    // have to wait until the next frame to be shown.
+    if (buffer_should_update) {
+        // Update the buffer
+        localSceneLightingInformation.UpdateFinalRDFBuffer();
+        MapNewBufferData();
+    }
+
     Render();
 }
 
@@ -148,6 +239,69 @@ void Game::Update(DX::StepTimer const& timer)
     // TODO: Add your game logic here
     
     elapsedTime;
+}
+
+void Game::SetShouldUpdate(bool should) {
+    buffer_should_update = should;
+}
+
+void Game::MapNewBufferData() {
+    vector<ScreeSpaceRDF> new_buffer_data = localSceneLightingInformation.GetFinalRDFBuffer();
+
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+
+	vertex_count = (UINT) new_buffer_data.size() * 3;
+
+    float* new_vertex_data = new float[vertex_count * 6]; // need to make space for the color
+
+    ZeroMemory(new_vertex_data, sizeof(float) * vertex_count * 6);
+    
+    ScreeSpaceRDF currRDF;
+	Color currColor;
+	tuple<Vector3, Vector3, Vector3> currBounds;
+    int baseIndex;
+
+	for (int i = 0; i < new_buffer_data.size(); i++) {
+		currRDF = new_buffer_data[i];
+		currBounds = currRDF.final_bounds;
+		currColor = currRDF.color;
+        baseIndex = i * 18;
+
+        // layout has to follow this pattern:
+        // BBB1CCCBBB2CCCBBB3CCC
+		// where BBn is the nth bound, and CCC is the color
+		new_vertex_data[baseIndex +  0] = get<0>(currBounds).x;
+		new_vertex_data[baseIndex +  1] = get<0>(currBounds).y;
+		new_vertex_data[baseIndex +  2] = get<0>(currBounds).z;
+        
+		new_vertex_data[baseIndex +  3] = currColor.x;
+		new_vertex_data[baseIndex +  4] = currColor.y;
+		new_vertex_data[baseIndex +  5] = currColor.z;
+
+		new_vertex_data[baseIndex +  6] = get<1>(currBounds).x;
+		new_vertex_data[baseIndex +  7] = get<1>(currBounds).y;
+		new_vertex_data[baseIndex +  8] = get<1>(currBounds).z;
+        
+		new_vertex_data[baseIndex +  9] = currColor.x;
+		new_vertex_data[baseIndex + 10] = currColor.y;
+		new_vertex_data[baseIndex + 11] = currColor.z;
+
+		new_vertex_data[baseIndex + 12] = get<2>(currBounds).x;
+		new_vertex_data[baseIndex + 13] = get<2>(currBounds).y;
+		new_vertex_data[baseIndex + 14] = get<2>(currBounds).z;
+
+		new_vertex_data[baseIndex + 15] = currColor.x;
+		new_vertex_data[baseIndex + 16] = currColor.y;
+		new_vertex_data[baseIndex + 17] = currColor.z;
+	}
+    
+    // map unmap
+    m_d3dContext->Map(vertex_buffer_ptr, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    memcpy(mappedResource.pData, new_vertex_data, sizeof(float) * vertex_count * 6);
+	m_d3dContext->Unmap(vertex_buffer_ptr, 0);
+
+	delete[] new_vertex_data;
 }
 
 #pragma endregion
@@ -180,6 +334,8 @@ void Game::Render()
     m_d3dContext->Draw(vertex_count, 0);
     
     Present();
+
+	buffer_should_update = false;
 }
 
 // Helper method to clear the back buffers.
@@ -248,6 +404,10 @@ void Game::OnWindowSizeChanged(int width, int height)
     CreateResources();
 
     // TODO: Game window is being resized.
+
+    // adjust screen ratio and force a rerender
+	localSceneLightingInformation.SetScreenRatio((float) m_outputWidth/m_outputHeight);
+    buffer_should_update = true;
 }
 
 // Properties
