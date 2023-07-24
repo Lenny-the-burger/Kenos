@@ -7,11 +7,6 @@
 #include "Material.h"
 #include "SceneObject.h"
 
-/*
-* Contains all of the information for a scene. Usually used as a transition from scene.json to runtime
-* and vise versa. This will eventually be used to save compute light tree and visibility data to disk.
-*/
-
 using DXVector3 = DirectX::SimpleMath::Vector3;
 
 /* Camera setup like this:
@@ -36,12 +31,19 @@ struct Camera {
 	DXVector3 Apos;
 	DXVector3 Bpos;
 	DXVector3 Cpos;
+
+	DXVector3 up;
 	
 	DXVector3 focalPoint;
+	DXVector3 lookAt;
 	float focalLength;
 
 	// we need to store this to be able to recreate a new focal point
 	DirectX::XMVECTOR prevRotQuat;
+
+	// Store the view and projection matrices here
+	DirectX::XMMATRIX viewMatrix;  // Store the view matrix here
+	DirectX::XMMATRIX projectionMatrix;  // Store the projection matrix here
 };
 
 enum SceneSize
@@ -56,6 +58,10 @@ enum SceneSize
 	KS_SCENESIZE_LARGE
 };
 
+/*
+Contains all of the information for a scene. Usually used as a transition from scene.json to runtime
+and vise versa. This will eventually be used to save compute light tree and visibility data to disk.
+*/
 class SceneInformation
 {
 public:
@@ -83,9 +89,15 @@ public:
 	// camera functions
 	void setCameraPos(DXVector3 newPos);
 	void rotateCamera(DXVector3 rotation);
+
+	DirectX::XMMATRIX ComputeViewMatrix();
+	DirectX::XMMATRIX ComputeProjectionMatrix(float newWidth, float newHeight);
 	
 	void setCameraFocalLength(float newFocalLength);
 	float getCameraFocalLength();
+
+	// Call this when the screen size changes. This is needed for the projection matrix
+	void UpdateScreenSize(int newWidth, int newHeight);
 
 	// Heres the camera object dumbass, this is what you get for not using builtins
 	Camera getCam();

@@ -18,6 +18,7 @@ using namespace DirectX::SimpleMath;
 // Default constructor
 SceneInformation::SceneInformation() {
 	globalPolyCount = 0;
+	size = KS_SCENESIZE_SMALL;
 };
 
 SceneInformation::SceneInformation(string filePath) {
@@ -65,7 +66,7 @@ SceneInformation::SceneInformation(string filePath) {
 
 		// check if the mesh file is valid
 		if (!scene) {
-			string errorMessage = "Mesh file '" + mesh + "' is invalid!";
+			string errorMessage = "Mesh file '" + mesh + "' is invalid (AssImp error)!";
 			MessageBoxA(NULL, errorMessage.c_str(), "Fatal error", MB_ICONERROR | MB_OK);
 			exit(0);
 		}
@@ -133,6 +134,7 @@ SceneInformation::SceneInformation(string filePath) {
 	
 	cam.focalLength = camFocalLength;
 	cam.focalPoint = camPos + Vector3(0, 0, -camFocalLength);
+	cam.lookAt =     camPos + Vector3(0, 0,  camFocalLength);
 
 	rotateCamera(camRot);
 
@@ -199,7 +201,10 @@ tuple<Vector3, Vector3, Vector3> SceneInformation::getTribyGlobalIndex(int idx) 
 		currentSO++;
 		accTriCount += nextFaceAmount;
 	}
-	throw std::out_of_range("Triangle index out of range");
+	//throw std::out_of_range("Triangle index out of range");
+
+	// this should never happen, but return 0 vectors so it doesn't crash
+	return make_tuple(Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(0, 0, 0));
 }
 
 void SceneInformation::setCameraPos(DXVector3 newPos) {
@@ -210,6 +215,9 @@ void SceneInformation::setCameraPos(DXVector3 newPos) {
 	cam.Cpos += offset;
 	
 	cam.focalPoint += offset;
+	cam.lookAt += offset;
+
+	cam.viewMatrix = ComputeViewMatrix();
 }
 
 // keep in mind this is not cumulative and will overwrite the current rotation
@@ -220,22 +228,51 @@ void SceneInformation::rotateCamera(DXVector3 newRot) {
 	// Construct new camera vectors based off of Apos
 	Vector3 newBpos = (Vector3) XMVector3Rotate(Vector3{  1, 1, 0 }, rotQuat) + cam.Apos;
 	Vector3 newCpos = (Vector3) XMVector3Rotate(Vector3{ -1, 1, 0 }, rotQuat) + cam.Apos;
+
+	Vector3 newUp   = (Vector3) XMVector3Rotate(Vector3{  0, 1, 0 }, rotQuat);
 	Vector3 newFocalPoint = (Vector3)XMVector3Rotate(Vector3{ 0, 0, -cam.focalLength }, rotQuat) + cam.Apos;
+	Vector3 newLookAt     = (Vector3)XMVector3Rotate(Vector3{ 0, 0,  cam.focalLength }, rotQuat) + cam.Apos;
 
 	cam.Bpos = newBpos;
 	cam.Cpos = newCpos;
+	cam.up = newUp;
 	cam.focalPoint = newFocalPoint;
+	cam.lookAt = newLookAt;
+
+	// compute view matrix, projection matrix is only recomputed when windows is resized
+	// or clipping planes are changed
+	cam.viewMatrix = ComputeViewMatrix();
 }
 
 void SceneInformation::setCameraFocalLength(float newFocalLength) {
 	cam.focalLength = newFocalLength;
 	Vector3 newFocalPoint = (Vector3)XMVector3Rotate(Vector3{ 0, 0, -cam.focalLength }, cam.prevRotQuat) + cam.Apos;
 	
+	// TODO: would also need to update FOV
+
 	cam.focalPoint = newFocalPoint;
 }
 
 float SceneInformation::getCameraFocalLength() {
 	return cam.focalLength;
+}
+
+XMMATRIX SceneInformation::ComputeViewMatrix() {
+	// Compute the view matrix using the camera's position, look-at point, and up vector
+	//return XMMatrixLookAtRH(cam.Apos, cam.focalPoint, cam.up);
+	return XMMatrixLookAtRH(cam.Apos, cam.lookAt, Vector3{0, 1, 0});
+}
+
+XMMATRIX SceneInformation::ComputeProjectionMatrix(float newWidth, float newHeight) {
+	//return XMMatrixPerspectiveRH(1000.0f, 800.0f, 0.01f, 100.0f);
+	return  XMMatrixPerspectiveFovRH((40.0f/360.0f)*XM_2PI, newWidth / newHeight, 0.01f, 100.0f);
+	//return XMMatrixIdentity();
+}
+
+void SceneInformation::UpdateScreenSize(int newWidth, int newHeight) {
+	cam.projectionMatrix = ComputeProjectionMatrix(newWidth, newHeight);
+
+	// TODO: update any screen size dependent variables here
 }
 
 Camera SceneInformation::getCam() {
