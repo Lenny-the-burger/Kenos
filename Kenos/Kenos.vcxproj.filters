@@ -26,9 +26,6 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{65be835d-2404-4421-9017-89a1ba61fea9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="eternal refs">
-      <UniqueIdentifier>{175f7376-c109-43e5-bab4-299caefe60e2}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -63,12 +60,6 @@
     <ClInclude Include="VisCompute.h">
       <Filter>Compute</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Direct3D Win32 test\Direct3D Win32 test\Game.h">
-      <Filter>eternal refs</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Direct3D Win32 test\Direct3D Win32 test\pch.h">
-      <Filter>eternal refs</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -100,15 +91,6 @@
     </ClCompile>
     <ClCompile Include="VisCompute.cpp">
       <Filter>Compute</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Direct3D Win32 test\Direct3D Win32 test\Game.cpp">
-      <Filter>eternal refs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Direct3D Win32 test\Direct3D Win32 test\Main.cpp">
-      <Filter>eternal refs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Direct3D Win32 test\Direct3D Win32 test\pch.cpp">
-      <Filter>eternal refs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
