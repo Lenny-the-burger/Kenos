@@ -89,20 +89,6 @@ void SceneLightingInformation::UpdateFinalRDFBuffer() {
 		v2 = scene.untransformFromCam(v2);
 		v3 = scene.untransformFromCam(v3);
 
-		/*v1 *= 100;
-		v2 *= 100;
-		v3 *= 100;*/
-
-		// assuming a 1920x1080 screen resolution for now
-		/*v1 += halfScreenVect;
-		v2 += halfScreenVect;
-		v3 += halfScreenVect;*/
-
-		// flip the y axis because the screen is upside down for some reason
-		/*v1.y = 1080 - v1.y;
-		v2.y = 1080 - v2.y;
-		v3.y = 1080 - v3.y;*/
-
 		// scale it down a bit
 		v1 /= 5;
 		v2 /= 5;

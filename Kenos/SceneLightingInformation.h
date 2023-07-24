@@ -12,7 +12,17 @@ using DXVector3 = DirectX::SimpleMath::Vector3;
 using DXVector2 = DirectX::SimpleMath::Vector2;
 using DXColor = DirectX::SimpleMath::Color;
 
+// Maximum amount of times light could bounce.
 #define KS_MAX_RAY_BOUNCES 4
+
+// Maximum lights that can be rendered per surface. This only affects SSRDF buffer.
+#define KS_MAX_SURFACE_LIGHTS 8
+
+// Constants for the convolution shader, see https://www.desmos.com/calculator/6wqxdr8v5k 
+// for a graph of the shader function. TODO: make the graph better.
+
+#define KS_CONVOLUTION_SAMPLE_LARGE 5
+#define KS_CONVOLUTION_SAMPLE_SCALE 0.5f
 
 // The RDF that is traced throughout the scene. Contains the information needed to render the
 // interaction of a caster surface on a reciever surface.
@@ -23,11 +33,8 @@ struct RadianceDistributionFunction {
 	// what bounce are we on?
 	int bounce;
 
-	// the stdev of the FRDF (depends on mean path distance and if the current reflection is 
-	// diffuse or specular). This is stored in a vector representing each step of the light path
-	// as you cant represet 4 gaussian blurs with only one blur operation. This should be equivalent
-	// in length to the bounce number.
-	float stdev[KS_MAX_RAY_BOUNCES];
+	// the stdev of the FRDF. this should be equivalent to the accumulated mean path dist
+	float stdev;
 
 	// Current colour (after being tinted by prev bounces)
 	DXColor Color;
@@ -39,33 +46,42 @@ struct RadianceDistributionFunction {
 	std::vector<DXVector3> shadow;
 };
 
-// Screen space version of the RDF, only used in final rendering
-struct ScreeSpaceRDF {
-	
-	// this is the final vertices that will be drawn
-	std::tuple<DXVector3, DXVector3, DXVector3> final_bounds;
-
-	// the final colour of the SSRDF, the colour composition is computed in the light tree.
-	DXColor color;
-	
+// This is the same as the SSRDF, but contains information for lighting only at each light bounce.
+struct LightPath {
 	/* These are used by the pixel shader :
 	* 1. Check if the current point is within the reflect bounds of that bounce, if not it is
 	*		0 for the current iteration
 	* 2. Start sum: -large to +large around centre of triangle
 	* 3. prev RDF * clip sample * gaussian (mean = sv_position, stdev = stdev, driver = sum sample)
-	* 
+	*
 	* Repeat that for each bounce, on the first step the previous RDF is just 1. For now light brightness
 	* is controlled by a value in the gaussian sample, this may change in the future to the initial value
 	* in place of the first RDF.
-	* 
+	*
 	*/
+	DXColor color; // for now we only store the final colour
+	
 	float stdev[KS_MAX_RAY_BOUNCES];
 
-	std::tuple<DXVector3, DXVector3, DXVector3> reflect_bounds[KS_MAX_RAY_BOUNCES];
+	std::tuple<DXVector3, DXVector3, DXVector3> bounds[KS_MAX_RAY_BOUNCES];
 
 	// list of all the shadows that are cast on this SSRDF. This is triangulated
 	// from the compound shadow of the RDF.
-	std::vector<DXVector3> shadow;
+	std::vector<DXVector3> shadow[KS_MAX_RAY_BOUNCES];
+};
+
+// This is the RDF that scatters on the screen, or camera directly. All of the previous bounce steps
+// are held in the LightPath array.
+struct ScreeSpaceRDF {
+
+	// this is the final vertices that will be drawn
+	std::tuple<DXVector3, DXVector3, DXVector3> final_bounds;
+
+	DXColor color;
+
+	LightPath surf_lights[KS_MAX_SURFACE_LIGHTS];
+
+	// not sure what else would go here, probaby stuff for deferred shading.
 };
 
 class SceneLightingInformation
