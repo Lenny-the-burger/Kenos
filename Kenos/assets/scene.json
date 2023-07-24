@@ -1,6 +1,6 @@
 {
-  "sceneName": "Test scene",
-  "sceneDescription": "This is a test scene",
+  "sceneName": "Cornell box",
+  "sceneDescription": "A Cornell box with a sphere and a light",
   "sceneSize":  "small",
   "meshes": [ "assets/icoSphere.obj", "assets/floor.obj" ],
   "materials": [
@@ -11,8 +11,20 @@
       "roughness": 0
     },
     {
-      "name": "floorMaterial",
-      "albedo": [ 127, 255, 127 ],
+      "name": "diffuseWhite",
+      "albedo": [ 255, 255, 255 ],
+      "emissiveIntensity": 1,
+      "roughness": 1
+    },
+    {
+      "name": "diffuseRed",
+      "albedo": [ 255, 0, 0 ],
+      "emissiveIntensity": 1,
+      "roughness": 1
+    },
+    {
+      "name": "diffuseGreen",
+      "albedo": [ 0, 255, 0 ],
       "emissiveIntensity": 1,
       "roughness": 1
     }
@@ -20,42 +32,54 @@
   "objects": [
     {
       "mesh": "assets/icoSphere.obj",
-      "material": "glossy",
-      "position": [ 0, 2.5, 0 ],
-      "rotation": [ 0, 0, 0 ],
-      "scale": [ 1.5, 1.5, 1.5 ]
-    },
-    {
-      "mesh": "assets/floor.obj",
-      "material": "floorMaterial",
-      "position": [ 0, -1, 0 ],
+      "material": "diffuseWhite",
+      "position": [ 0, 1.5, 0 ],
       "rotation": [ 0, 0, 0 ],
       "scale": [ 1, 1, 1 ]
     },
     {
-      "mesh": "assets/icoSphere.obj",
-      "material": "glossy",
-      "position": [ 5, 2.5, 0 ],
-      "rotation": [ 0, 0, 0 ],
-      "scale": [ 1.5, 1.5, 1.5 ]
+      "name": "floor",
+      "mesh": "assets/floor.obj",
+      "material": "diffuseWhite",
+      "position": [ 0, 0, 0 ],
+      "rotation": [ 3.1415, 0, 0 ],
+      "scale": [ 1, 1, 1 ]
     },
     {
-      "mesh": "assets/icoSphere.obj",
-      "material": "glossy",
-      "position": [ -5, 2.5, 0 ],
+      "name": "ceiling",
+      "mesh": "assets/floor.obj",
+      "material": "diffuseWhite",
+      "position": [ 0, 4, 0 ],
       "rotation": [ 0, 0, 0 ],
-      "scale": [ 1.5, 1.5, 1.5 ]
-    }
-  ],
-  "pointLights": [
+      "scale": [ 1, 1, 1 ]
+    },
     {
+      "name": "backboard",
+      "mesh": "assets/floor.obj",
+      "material": "diffuseWhite",
       "position": [ 0, 2, 2 ],
-      "color": [ 255, 255, 255 ],
-      "intensity": 1
+      "rotation": [ 1.5707, 0, 0 ],
+      "scale": [ 1, 1, 1 ]
+    },
+    {
+      "name": "leftWall",
+      "mesh": "assets/floor.obj",
+      "material": "diffuseRed",
+      "position": [ 2, 2, 0 ],
+      "rotation": [ 3.1415, 0, -1.5707 ],
+      "scale": [ 1, 1, 1 ]
+    },
+    {
+      "name": "rightWall",
+      "mesh": "assets/floor.obj",
+      "material": "diffuseGreen",
+      "position": [ -2, 2, 0 ],
+      "rotation": [ 3.1415, 0, 1.5707 ],
+      "scale": [ 1, 1, 1 ]
     }
   ],
   "camera": {
-    "position": [ 0, 2, -5 ],
+    "position": [ 0, 2, -10 ],
     "rotation": [ 0, 0, 0 ],
     "focalLength": 20
   }
