@@ -29,8 +29,17 @@ void Game::Initialize(HWND window, int width, int height)
     m_outputHeight = std::max(height, 1);
 
 	localSceneInformation = SceneInformation("assets/scene.json");
+    localSceneInformation.UpdateScreenSize(WINDOW_SIZE_W, WINDOW_SIZE_H); // set to dflt window size
+
 	localSceneLightingInformation.SetScene(localSceneInformation);
 	localSceneLightingInformation.SetScreenRatio((float) m_outputWidth/m_outputHeight);
+
+#ifdef KS_ENABLE_CUSTOM_WINDOW_TITLE
+    // Set window title to scene name
+    string sceneTitle = "Kenos - " + localSceneInformation.getSceneName();
+    LPCSTR sceneTitleName = sceneTitle.c_str();
+    SetWindowTextA(window, sceneTitleName);
+#endif
 
     CreateDevice();
 
@@ -42,8 +51,11 @@ void Game::Initialize(HWND window, int width, int height)
 
     InitVertexBuffer();
 
+    InitConstantBuffer();
+    UpdateShaderCameraConstantBuffer();
+
     localSceneLightingInformation.BuildLightTree();
-	buffer_should_update = true;
+	//buffer_should_update = true;
 
     // TODO: Change the timer settings if you want something other than the default variable timestep mode.
     // e.g. for 60 FPS fixed timestep update logic, call:
@@ -54,40 +66,59 @@ void Game::Initialize(HWND window, int width, int height)
 }
 
 #pragma region Pipeline initiliazation
+void Game::InitConstantBuffer() {
+    // Create constant buffer with camera matrices. Setting is done in a deperate function
+    // Define the constant data used to communicate with shaders
+
+    // Fill in a buffer description.
+    D3D11_BUFFER_DESC cbDesc;
+    cbDesc.ByteWidth = sizeof(CONSTANT_BUFFER_STRUCT);
+    cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    cbDesc.MiscFlags = 0;
+    cbDesc.StructureByteStride = 0;
+
+    // Get the data from the camera
+    Camera localCam = localSceneInformation.getCam();
+    XMMATRIX view = localCam.viewMatrix;
+    XMMATRIX projection = localCam.projectionMatrix;
+
+    // store initial data in struct
+    CONSTANT_BUFFER_STRUCT shaderConstantData = {};
+    ZeroMemory(&shaderConstantData, sizeof(CONSTANT_BUFFER_STRUCT));
+
+    shaderConstantData.sampleLarge = KS_CONVOLUTION_SAMPLE_LARGE;
+    shaderConstantData.sampleScale = KS_CONVOLUTION_SAMPLE_SCALE;
+    
+    XMStoreFloat4x4(&shaderConstantData.viewMatrix, XMMatrixTranspose(view));
+    XMStoreFloat4x4(&shaderConstantData.projectionMatrix, XMMatrixTranspose(projection));
+
+    // Fill in the subresource data.
+    D3D11_SUBRESOURCE_DATA InitData;
+    InitData.pSysMem = &shaderConstantData;
+    InitData.SysMemPitch = 0;
+    InitData.SysMemSlicePitch = 0;
+
+    // Create the buffer.
+    HRESULT hr = m_d3dDevice->CreateBuffer(&cbDesc, &InitData, &constant_buffer_ptr);
+    assert(SUCCEEDED(hr));
+
+    // Set the buffer.
+    m_d3dContext->PSSetConstantBuffers(0, 1, &constant_buffer_ptr);
+    m_d3dContext->VSSetConstantBuffers(0, 1, &constant_buffer_ptr);
+
+}
+
 void Game::InitVertexBuffer() {
 
 	int faceCount = localSceneInformation.getGlobalPolyCount();
     vertex_count = faceCount * 3;
     
-    int element_amount;
+	// vertex inputs:                 POSITION
+	UINT bufferSize = vertex_count * (3 * sizeof(float));
 
-    switch (localSceneInformation.getSceneSize()) {
-    case KS_SCENESIZE_SMALL:
-		// allocate enough space to store every triangle in the scene
-        element_amount = vertex_count;
-		break;
-
-	case KS_SCENESIZE_MEDIUM:
-		// allocate enough space to store every other triangle in the scene, some will be
-		// culled through backface culling
-        element_amount = vertex_count / 2;
-		break;
-
-	case KS_SCENESIZE_LARGE:
-		// allocate enough space to store every fourth triangle in the scene, some will be
-		// culled through backface culling and frustum culling
-        element_amount = vertex_count / 4;
-		break;
-        
-	default:
-        element_amount = vertex_count;
-		break;
-    }
-    
-	//                                  POSITION             COLOR
-	UINT bufferSize = element_amount * (3 * sizeof(float) +  3 * sizeof(float));
-
-    vertex_stride = 3 * sizeof(float) + 3 * sizeof(float);
+    vertex_stride = 3 * sizeof(float);
 	vertex_offset = 0;
 
     D3D11_BUFFER_DESC vertex_buff_descr = {};
@@ -96,13 +127,45 @@ void Game::InitVertexBuffer() {
     vertex_buff_descr.Usage = D3D11_USAGE_DYNAMIC;
     vertex_buff_descr.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     vertex_buff_descr.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    
 
+	float* init_vertex_data = new float[bufferSize/sizeof(float)];
 
-	float* temp_data = new float[bufferSize/sizeof(float)];
+    Camera localCam = localSceneInformation.getCam();
+
+    // set funcy number for finding in memory
+    //init_vertex_data[-1] = 12345.6789;
+
+    XMFLOAT4X4 viewDebug;
+    XMStoreFloat4x4(&viewDebug, XMMatrixTranspose(localCam.viewMatrix));
+    XMFLOAT4X4 projDebug;
+    XMStoreFloat4x4(&projDebug, XMMatrixTranspose(localCam.projectionMatrix));
+
+    // load vertex data into buffer
+    for (int i = 0; i < faceCount; i++) {
+		// get the vertex data from the scene
+        tuple<Vector3, Vector3, Vector3> face = localSceneInformation.getTribyGlobalIndex(i);
+
+        // temp debug transforms
+        Vector3 v1 = get<0>(face);
+        v1 = XMVector3Transform(v1, localCam.viewMatrix);
+        v1 = XMVector3Transform(v1, localCam.projectionMatrix);
+
+		// store the vertex data in the buffer
+        init_vertex_data[(9 * i) + 0] = get<0>(face).x;
+        init_vertex_data[(9 * i) + 1] = get<0>(face).y;
+        init_vertex_data[(9 * i) + 2] = get<0>(face).z;
+
+        init_vertex_data[(9 * i) + 3] = get<1>(face).x;
+        init_vertex_data[(9 * i) + 4] = get<1>(face).y;
+        init_vertex_data[(9 * i) + 5] = get<1>(face).z;
+
+        init_vertex_data[(9 * i) + 6] = get<2>(face).x;
+        init_vertex_data[(9 * i) + 7] = get<2>(face).y;
+        init_vertex_data[(9 * i) + 8] = get<2>(face).z;
+	}
 
     D3D11_SUBRESOURCE_DATA vertexBufferData;
-    vertexBufferData.pSysMem = temp_data;
+    vertexBufferData.pSysMem = init_vertex_data;
     vertexBufferData.SysMemPitch = 0;
     vertexBufferData.SysMemSlicePitch = 0;
     
@@ -113,15 +176,14 @@ void Game::InitVertexBuffer() {
     assert(SUCCEEDED(hr));
 
 	// cleanup temp data
-	delete[] temp_data;
+	delete[] init_vertex_data;
 }
 
 void Game::CreateLayout()
 {   
     D3D11_INPUT_ELEMENT_DESC inputElementDesc[] = {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-      
+        // TODO: add other per vertex data here
     };
     HRESULT hr = m_d3dDevice->CreateInputLayout(
         inputElementDesc,
@@ -162,47 +224,6 @@ void Game::LoadShaders(const wchar_t* vs_path, const wchar_t* ps_path)
     assert(SUCCEEDED(result) && "Failed to create pixel shader.");
 }
 
-HRESULT Game::CompileShader(_In_ LPCWSTR srcFile, _In_ LPCSTR entryPoint, _In_ LPCSTR profile, _Outptr_ ID3DBlob** blob)
-{
-    if (!srcFile || !entryPoint || !profile || !blob)
-        return E_INVALIDARG;
-
-    *blob = nullptr;
-
-    flags = D3DCOMPILE_ENABLE_STRICTNESS;
-#if defined( DEBUG ) || defined( _DEBUG )
-    flags |= D3DCOMPILE_DEBUG;
-#endif
-
-    const D3D_SHADER_MACRO defines[] =
-    {
-        NULL, NULL
-    };
-
-    ID3DBlob* shaderBlob = nullptr;
-    ID3DBlob* errorBlob = nullptr;
-    HRESULT hr = D3DCompileFromFile(srcFile, defines, D3D_COMPILE_STANDARD_FILE_INCLUDE,
-        entryPoint, profile,
-        flags, 0, &shaderBlob, &errorBlob);
-    if (FAILED(hr))
-    {
-        if (errorBlob)
-        {
-            OutputDebugStringA((char*)errorBlob->GetBufferPointer());
-            errorBlob->Release();
-        }
-
-        if (shaderBlob)
-            shaderBlob->Release();
-
-        return hr;
-    }
-
-    *blob = shaderBlob;
-
-    return hr;
-}
-
 SceneInformation Game::GetSceneInformation() const noexcept
 {
 	return localSceneInformation;
@@ -223,13 +244,11 @@ void Game::Tick()
     if (buffer_should_update) {
         // Update the buffer
         localSceneLightingInformation.UpdateFinalRDFBuffer();
-        MapNewBufferData();
+        //MapNewBufferData();
     }
 
     Render();
 }
-
-float rotTemp = 0;
 
 // Updates the world.
 void Game::Update(DX::StepTimer const& timer)
@@ -237,12 +256,49 @@ void Game::Update(DX::StepTimer const& timer)
     float elapsedTime = float(timer.GetElapsedSeconds());
 
     // TODO: Add your game logic here
-    
+    /*Vector3 oldpos = localSceneInformation.getCam().Apos;
+
+    localSceneInformation.setCameraPos(oldpos + Vector3{0, 0, -0.1f});
+    UpdateShaderCameraConstantBuffer();*/
+
     elapsedTime;
 }
 
 void Game::SetShouldUpdate(bool should) {
     buffer_should_update = should;
+}
+
+// Get the current camera matrices and map into constant buffer
+void Game::UpdateShaderCameraConstantBuffer() {
+    Camera localCamera = localSceneInformation.getCam();
+
+    // Get the data from the camera
+    Camera localCam = localSceneInformation.getCam();
+    XMMATRIX view = localCam.viewMatrix;
+    XMMATRIX projection = localCam.projectionMatrix;
+
+    // store initial data in struct
+    CONSTANT_BUFFER_STRUCT shaderConstantData = {};
+    ZeroMemory(&shaderConstantData, sizeof(CONSTANT_BUFFER_STRUCT));
+
+    shaderConstantData.sampleLarge = KS_CONVOLUTION_SAMPLE_LARGE;
+    shaderConstantData.sampleScale = KS_CONVOLUTION_SAMPLE_SCALE;
+
+    XMStoreFloat4x4(&shaderConstantData.viewMatrix, XMMatrixTranspose(view));
+    XMStoreFloat4x4(&shaderConstantData.projectionMatrix, XMMatrixTranspose(projection));
+
+    // Map the camera matrices into the constant buffer
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+
+    // the constant buffer isnt a homoegenous array, but a struct
+    // so we need to map the resource to the struct
+    m_d3dContext->Map(constant_buffer_ptr, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+
+    memcpy(mappedResource.pData, &shaderConstantData, sizeof(CONSTANT_BUFFER_STRUCT));
+    //mappedResource.pData = &shaderConstantData;
+
+    m_d3dContext->Unmap(constant_buffer_ptr, 0);
 }
 
 void Game::MapNewBufferData() {
@@ -298,7 +354,9 @@ void Game::MapNewBufferData() {
     
     // map unmap
     m_d3dContext->Map(vertex_buffer_ptr, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+
     memcpy(mappedResource.pData, new_vertex_data, sizeof(float) * vertex_count * 6);
+
 	m_d3dContext->Unmap(vertex_buffer_ptr, 0);
 
 	delete[] new_vertex_data;
@@ -405,9 +463,15 @@ void Game::OnWindowSizeChanged(int width, int height)
 
     // TODO: Game window is being resized.
 
-    // adjust screen ratio and force a rerender
+    // update scene information screen size
+    localSceneInformation.UpdateScreenSize(m_outputWidth, m_outputHeight);
+
+    // Update camera information in the shader
+    UpdateShaderCameraConstantBuffer();
+
+    // update lighting information screen ratio and force update
 	localSceneLightingInformation.SetScreenRatio((float) m_outputWidth/m_outputHeight);
-    buffer_should_update = true;
+    //buffer_should_update = true;
 }
 
 // Properties

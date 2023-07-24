@@ -20,6 +20,19 @@
 #define WINDOW_SIZE_W 1000
 #define WINDOW_SIZE_H 800
 
+// Weather to set the scene name in the window title, as it causes a small delay on startup
+//#define KS_ENABLE_CUSTOM_WINDOW_TITLE
+
+// this is a constant buffer so needs to be a multiple of 16
+
+struct alignas(16) CONSTANT_BUFFER_STRUCT
+{
+    DirectX::XMFLOAT4X4 viewMatrix;
+    DirectX::XMFLOAT4X4 projectionMatrix;
+    int sampleLarge;
+    float sampleScale;
+};
+
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
 class Game final
@@ -57,7 +70,7 @@ private:
 
     void Update(DX::StepTimer const& timer);
     void Render();
-
+    
     void Clear();
     void Present();
 
@@ -66,11 +79,12 @@ private:
 
     void OnDeviceLost();
 
-    HRESULT CompileShader(_In_ LPCWSTR srcFile, _In_ LPCSTR entryPoint, _In_ LPCSTR profile, _Outptr_ ID3DBlob** blob);
     void LoadShaders(const wchar_t* vs_path, const wchar_t* ps_path);
     void CreateLayout();
     void InitVertexBuffer();
+    void InitConstantBuffer();
 
+    void UpdateShaderCameraConstantBuffer();
     void MapNewBufferData();
     
     // Scene information
@@ -91,7 +105,7 @@ private:
 
     // Rendering loop timer.
     DX::StepTimer                                   m_timer;
-
+    
     // Scene information
     SceneInformation localSceneInformation;
 	SceneLightingInformation localSceneLightingInformation;
@@ -108,11 +122,12 @@ private:
 
     ID3DBlob* vertex_shader_blob;
     ID3DBlob* pixel_shader_blob;
-
+    
     // iput layout
     ID3D11InputLayout* input_layout_ptr;
 
     // Buffer stuff
+    ID3D11Buffer* constant_buffer_ptr;
     ID3D11Buffer* vertex_buffer_ptr;
     UINT vertex_stride;
     UINT vertex_offset;
