@@ -13,6 +13,9 @@
 
 using DXVector3 = DirectX::SimpleMath::Vector3;
 
+// Create a matrix that projects onto a plane
+DirectX::XMMATRIX OrthographicProjectionOntoPlane(const DirectX::XMVECTOR plane);
+
 // Creates a function that goes through points a, b, and returns f(x)
 // 
 // Params:

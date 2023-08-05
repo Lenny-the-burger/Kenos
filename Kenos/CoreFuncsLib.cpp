@@ -1,4 +1,3 @@
-
 /*
 	This file contains the core math functions used by the engine that arent covered by DirectXMath.
 */
@@ -16,6 +15,43 @@ using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
 using Microsoft::WRL::ComPtr;
+
+#include <DirectXMath.h>
+
+#include <DirectXMath.h>
+
+DirectX::XMMATRIX OrthographicProjectionOntoPlane(const DirectX::XMVECTOR plane)
+{
+	using namespace DirectX;
+
+	// Extract the plane coefficients
+	float A = XMVectorGetX(plane);
+	float B = XMVectorGetY(plane);
+	float C = XMVectorGetZ(plane);
+	float D = XMVectorGetW(plane);
+
+	// Compute the normalization factor
+	float norm = sqrtf(A * A + B * B + C * C);
+
+	// Normalize the plane coefficients
+	A /= norm;
+	B /= norm;
+	C /= norm;
+	D /= norm;
+
+	// Construct the orthographic projection matrix
+	XMMATRIX projectionMatrix =
+	{
+		1.0f - A * A,   -A * B,       -A * C,       0.0f,
+		-A * B,        1.0f - B * B, -B * C,       0.0f,
+		-A * C,        -B * C,       1.0f - C * C, 0.0f,
+		-A * D,        -B * D,       -C * D,       1.0f
+	};
+
+	return projectionMatrix;
+}
+
+
 
 // Creates a function that goes through points a, b, and returns f(x)
 // 
