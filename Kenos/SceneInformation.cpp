@@ -207,6 +207,29 @@ tuple<Vector3, Vector3, Vector3> SceneInformation::getTribyGlobalIndex(int idx) 
 	return make_tuple(Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(0, 0, 0));
 }
 
+int SceneInformation::getObjIndexbyGlobalIndex(int idx) {
+	int currentSO = 0;
+	int accTriCount = 0;
+	int nextFaceAmount;
+	Mesh objMesh;
+
+	for (SceneObject& obj : sceneObjects) {
+		objMesh = obj.GetMesh();
+
+		nextFaceAmount = objMesh.GetFaceCount();
+
+		// if the index is less than the accumulated tri count then we are in range
+		if (idx < accTriCount + nextFaceAmount) {
+			return currentSO;
+		}
+
+		// otherwise we need to move on to the next object
+		currentSO++;
+		accTriCount += nextFaceAmount;
+	}
+	throw std::out_of_range("Triangle index out of range");
+}
+
 void SceneInformation::setCameraPos(DXVector3 newPos) {
 	Vector3 offset = newPos - cam.Apos;
 	

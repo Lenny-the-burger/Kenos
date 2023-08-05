@@ -3,6 +3,8 @@
 #include <string>
 #include <map>
 
+#include "EngineConstants.h"
+
 #include "Mesh.h"
 #include "Material.h"
 #include "SceneObject.h"
@@ -85,6 +87,10 @@ public:
 
 	// return triangle at global index idx
 	std::tuple<DXVector3, DXVector3, DXVector3> getTribyGlobalIndex(int idx);
+
+	// reverse of getTribyGlobalIndex, returns the index of the object that contains 
+	// the triangle at global index idx
+	int getObjIndexbyGlobalIndex(int idx);
 
 	// camera functions
 	void setCameraPos(DXVector3 newPos);
