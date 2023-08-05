@@ -6,83 +6,121 @@
 #include <DirectXMath.h>
 #include <SimpleMath.h>
 
+#include "EngineConstants.h"
+
 #include "SceneInformation.h"
+#include "CoreFuncsLib.h"
 
 using DXVector3 = DirectX::SimpleMath::Vector3;
 using DXVector2 = DirectX::SimpleMath::Vector2;
 using DXColor = DirectX::SimpleMath::Color;
 
-// Maximum amount of times light could bounce.
-#define KS_MAX_RAY_BOUNCES 4
+/* These are used by the pixel shader :
+* 1. Check if the current point is within the reflect bounds of that bounce, if not it is
+*		0 for the current iteration
+* 2. Start sum: -large to +large around centre of triangle
+* 3. prev RDF * clip sample * gaussian (mean = sv_position, stdev = stdev, driver = sum sample)
+*
+* Repeat that for each bounce, on the first step the previous RDF is just 1. For now light brightness
+* is controlled by a value in the gaussian sample, this may change in the future to the initial value
+* in place of the first RDF.
+*
+*/
 
-// Maximum lights that can be rendered per surface. This only affects SSRDF buffer.
-#define KS_MAX_SURFACE_LIGHTS 8
+// Representaiton of the the radiance distribution function. This is what gets traced through the scene
+// 
+struct RDF {
+	// Index of the SurfaceLightmapDirectory struct that this RDF belongs to.
+	int parentDirectoryIndex;
 
-// Constants for the convolution shader, see https://www.desmos.com/calculator/6wqxdr8v5k 
-// for a graph of the shader function. TODO: make the graph better.
+	// When backtracing in the shader, index into the lightmap of the parent RDF. If this is nullptr
+	// then it has no parent and we are at a light source.
+	RDF* parentRDF;
 
-#define KS_CONVOLUTION_SAMPLE_LARGE 5
-#define KS_CONVOLUTION_SAMPLE_SCALE 0.5f
+	std::vector<RDF> children;
 
-// The RDF that is traced throughout the scene. Contains the information needed to render the
-// interaction of a caster surface on a reciever surface.
-struct RadianceDistributionFunction {
-	// The bounds of the RDF, used for rendering (RDF is stenciled to these bounds)
-	std::tuple<DXVector3, DXVector3, DXVector3> bounds;
+	// This is the corrected colour, so we dont have to sample the surface and mix it with the
+	// light colour in the shader.
+	DirectX::SimpleMath::Color color;
 
-	// what bounce are we on?
-	int bounce;
-
-	// the stdev of the FRDF. this should be equivalent to the accumulated mean path dist
 	float stdev;
 
-	// Current colour (after being tinted by prev bounces)
-	DXColor Color;
+	// This stays the same through all bounces because of how the shader works maybe we can optimize
+	// this but 4 extra bytes per structure isnt that bad. (we probably will have more padding anyway)
+	float lightBrightness;
 
-	// A map of all of the polygons that this RDF bounces on in the next bounce
-	std::map<int, RadianceDistributionFunction> nextBounce;
-
-	// accumulated shadow, this is merged and triangulated at some point
-	std::vector<DXVector3> shadow;
+	// Shadows (triangles) cast from the parent.
+	std::vector<DirectX::XMFLOAT3X3> shadow;
+	std::vector<float> shadowStdev;
 };
 
-// This is the same as the SSRDF, but contains information for lighting only at each light bounce.
-struct LightPath {
-	/* These are used by the pixel shader :
-	* 1. Check if the current point is within the reflect bounds of that bounce, if not it is
-	*		0 for the current iteration
-	* 2. Start sum: -large to +large around centre of triangle
-	* 3. prev RDF * clip sample * gaussian (mean = sv_position, stdev = stdev, driver = sum sample)
-	*
-	* Repeat that for each bounce, on the first step the previous RDF is just 1. For now light brightness
-	* is controlled by a value in the gaussian sample, this may change in the future to the initial value
-	* in place of the first RDF.
-	*
-	*/
-	DXColor color; // for now we only store the final colour
-	
-	float stdev[KS_MAX_RAY_BOUNCES];
+// A "directory" of all of the lightmap information for a surface. This is a per-surface structure
+// that contains all of the information needed to render the surface. This is not the lightmap itself,
+// as that is usually not per surface as light may bounce between surfaces any amount of times.
+struct SurfaceLightmapDirectory {
 
-	std::tuple<DXVector3, DXVector3, DXVector3> bounds[KS_MAX_RAY_BOUNCES];
+	// This is the base colour of the surface.
+	DirectX::SimpleMath::Color color;
 
-	// list of all the shadows that are cast on this SSRDF. This is triangulated
-	// from the compound shadow of the RDF.
-	std::vector<DXVector3> shadow[KS_MAX_RAY_BOUNCES];
-};
+	// Matrix that when multiplied with flattens geometry to the surface plane.
+	DirectX::XMMATRIX flattenMatrix;
 
-// This is the RDF that scatters on the screen, or camera directly. All of the previous bounce steps
-// are held in the LightPath array.
-struct ScreeSpaceRDF {
-
-	// this is the final vertices that will be drawn
-	std::tuple<DXVector3, DXVector3, DXVector3> final_bounds;
-
-	DXColor color;
-
-	LightPath surf_lights[KS_MAX_SURFACE_LIGHTS];
+	std::vector<RDF> surfLights;
 
 	// not sure what else would go here, probaby stuff for deferred shading.
 };
+
+// shh padding i kno
+#pragma warning(disable: 4324)
+
+// This is a version of the full RDF that gets stored in a buffer and actually used in rendering.
+// Things not immedietly needed for rendering such as children, bounds, etc are not stored here.
+// All of the vertex information has been flattened to the surface plane.
+struct alignas(128) SurfLight {
+	DirectX::XMFLOAT3X3 bounds;
+
+	// This is the corrected colour, so we dont have to sample the surface and mix it with the
+	// light colour in the shader.
+	DirectX::XMFLOAT3 color;
+
+	DirectX::XMFLOAT3 casterNormal;
+
+	// this is the total from the path. computed as sqrt(sum of squares of each stdev)
+	float stdev;
+
+	// This stays the same through all bounces because of how the shader works maybe we can optimize
+	// this but 4 extra bytes per structure isnt that bad. (we probably will have more padding anyway)
+	float lightBrightness;
+
+	// Shadows (triangles) cast from the parent. KS_MAX_SHADOWS
+	DirectX::XMFLOAT3X3 shadow[KS_MAX_SHADOWS];
+	DirectX::XMFLOAT3   shadowHeights[KS_MAX_SHADOWS];
+	int numShadows;
+};
+
+// The same as SurfaceLightmapDirectory, but uses c style arrays to get ready to copy to buffers.
+struct alignas(32) SurfaceLightmapDirectoryPacked {
+
+	// This is the base colour of the surface.
+	DirectX::XMFLOAT3 color;
+
+	// Emmisive strength of the surface. We can cull lightmaps that are overpowered by this.
+	int emmissiveStrength;
+
+	// surflights will be held in their own buffer of size 
+	// KS_MAX_SURFACE_LIGHTS * KS_MAX_RAY_BOUNCES * element amount * sizeof(SurfLight)
+	// just use the current primitive id to index into the buffer with
+	// KS_MAX_SURFACE_LIGHTS * KS_MAX_RAY_BOUNCES * primitiveID
+	// Both of these structs will be held in a structured buffer so we dont have to worry about
+	// getting size alignment right.
+
+	int numLights;
+
+	// not sure what else would go here, probaby stuff for deferred shading.
+};
+
+// enable padding warnings again
+#pragma warning(default: 4324)
 
 class SceneLightingInformation
 {
@@ -108,11 +146,13 @@ public:
 	// Constructs the final RDF buffer to be rendered
 	void UpdateFinalRDFBuffer();
 
-	// Returns the final vertex buffer to be rendered
-	std::vector<ScreeSpaceRDF> GetFinalRDFBuffer();
+	std::vector<SurfaceLightmapDirectoryPacked> GetDirectoryBuffer();
+	std::vector<SurfLight> GetFinalLightmapBuffer();
 	
 	
 private:
+	void MurderRDFfamilly(RDF& parent);
+
 	SceneInformation& scene;
 	
 	float screenRatio;
@@ -121,10 +161,9 @@ private:
 
 	// The lighting tree, a map of all of the indeces of the immedietly emissive polygons to the RDF
 	// that is traced from them. This is not rendered directly.
-	std::map<int, RadianceDistributionFunction> lightTree;
+	std::map<int, RDF> lightTree;
 
-	// The actual vertex buffer that is render to screen. This is already converted from 3d space so
-	// it can be rendered directly.
-	std::vector<ScreeSpaceRDF> finalRDFbuffer;
+	std::vector<SurfaceLightmapDirectoryPacked> finalDirectoryBuffer;
+	std::vector<SurfLight> finalLightmapBuffer;
 };
 

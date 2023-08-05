@@ -53,68 +53,37 @@ void SceneLightingInformation::UpdateLightTree(int idx) {
 }
 
 void SceneLightingInformation::UpdateFinalRDFBuffer() {
-	finalRDFbuffer.clear();
-	
-	Camera localCamera = scene.getCam();
+	finalDirectoryBuffer.clear();
 
-	XMVECTOR camPlane = XMPlaneFromPoints(localCamera.Apos, localCamera.Bpos, localCamera.Cpos);
+	// for now just loop through all of the polygons and assembly the directory buffer with the
+	// albedo material colour for each object
 
-	tuple<Vector3, Vector3, Vector3> currTri;
+	for (int i = 0; i < globalPolyCount; i++) {
+		// get the object that this poly belongs to
+		int objIdx = scene.getObjIndexbyGlobalIndex(i);
 
-	Vector3 halfScreenVect = Vector3(1920 / 2, 1080 / 2, 0);
+		// get the object
+		SceneObject obj = scene.getSceneObjects()[objIdx];
 
-	Vector3 screenRatioVector = Vector3(1/screenRatio, 1, 0);
+		// get the material
+		Material mat = obj.GetMaterial();
 
-	for (int globalIndex = 0; globalIndex < scene.getGlobalPolyCount(); globalIndex++) {
-		currTri = scene.getTribyGlobalIndex(globalIndex);
+		// get the albedo colour
+		Color albedo = mat.GetAlbedo();
 
-		Vector3 v1 = get<0>(currTri);
-		Vector3 v2 = get<1>(currTri);
-		Vector3 v3 = get<2>(currTri);
+		SurfaceLightmapDirectoryPacked dir;
+		dir.color = XMFLOAT3(albedo.x, albedo.y, albedo.z)/255.0f; // convert to 0-1 range
 
-		// do backface culling
-		Vector3 normal = (v2 - v1).Cross(v3 - v1);
-		if (normal.Dot(localCamera.focalPoint - (v1 + v2 + v3) / 3) < 0) {
-			continue;
-		}
+		dir.emmissiveStrength = mat.GetEmissiveIntensity();
 
-		// intersect the camera plane with a line that goes through each vert
-		// of the triangle and the focal point
-		v1 = XMPlaneIntersectLine(camPlane, localCamera.focalPoint, v1);
-		v2 = XMPlaneIntersectLine(camPlane, localCamera.focalPoint, v2);
-		v3 = XMPlaneIntersectLine(camPlane, localCamera.focalPoint, v3);
-
-		// normalize points
-		v1 = scene.untransformFromCam(v1);
-		v2 = scene.untransformFromCam(v2);
-		v3 = scene.untransformFromCam(v3);
-
-		// scale it down a bit
-		v1 /= 5;
-		v2 /= 5;
-		v3 /= 5;
-
-		// scale it to fit the screen
-		v1 *= screenRatioVector;
-		v2 *= screenRatioVector;
-		v3 *= screenRatioVector;
-
-		// Color based on global index
-		float idxRatio = (float)globalIndex / (float)scene.getGlobalPolyCount();
-		Color color = Color{ idxRatio, idxRatio, idxRatio };
-
-		// Construct the SSRD from the RDF and add into the final buffer
-		tuple<Vector3, Vector3, Vector3> ssrdf_bounds = { v1, v2, v3 };
-		
-		ScreeSpaceRDF ssrdf = ScreeSpaceRDF{ ssrdf_bounds, color };
-
-		finalRDFbuffer.push_back(ssrdf);
-
-		// TODO: extract the stdev vector from the RDF and properly do other tsuff
-		
+		finalDirectoryBuffer.push_back(dir);
 	}
 }
 
-vector<ScreeSpaceRDF> SceneLightingInformation::GetFinalRDFBuffer() {
-	return finalRDFbuffer;
+std::vector<SurfaceLightmapDirectoryPacked> SceneLightingInformation::GetDirectoryBuffer() {
+	return finalDirectoryBuffer;
+}
+
+std::vector<SurfLight> SceneLightingInformation::GetFinalLightmapBuffer() {
+	return finalLightmapBuffer;
 }
