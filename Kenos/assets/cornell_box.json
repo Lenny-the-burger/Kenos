@@ -2,7 +2,7 @@
   "sceneName": "Cornell box",
   "sceneDescription": "A Cornell box with a sphere and a light",
   "sceneSize":  "small",
-  "meshes": [ "assets/icoSphere.obj", "assets/floor.obj" ],
+  "meshes": [ "assets/icoSphere.obj", "assets/floor.obj", "assets/light.obj" ],
   "materials": [
     {
       "name": "glossy",
@@ -11,29 +11,36 @@
       "roughness": 0
     },
     {
+      "name": "emissive",
+      "albedo": [ 255, 255, 255 ],
+      "emissiveIntensity": 10,
+      "roughness": 1
+    },
+    {
       "name": "diffuseWhite",
       "albedo": [ 255, 255, 255 ],
-      "emissiveIntensity": 1,
+      "emissiveIntensity": 0,
       "roughness": 1
     },
     {
       "name": "diffuseRed",
       "albedo": [ 255, 0, 0 ],
-      "emissiveIntensity": 1,
+      "emissiveIntensity": 0,
       "roughness": 1
     },
     {
       "name": "diffuseGreen",
       "albedo": [ 0, 255, 0 ],
-      "emissiveIntensity": 1,
+      "emissiveIntensity": 0,
       "roughness": 1
     }
   ],
   "objects": [
     {
+      "name": "sphere",
       "mesh": "assets/icoSphere.obj",
       "material": "diffuseWhite",
-      "position": [ 0, 1.5, 0 ],
+      "position": [ 0, 1, 0 ],
       "rotation": [ 0, 0, 0 ],
       "scale": [ 1, 1, 1 ]
     },
@@ -76,6 +83,14 @@
       "position": [ -2, 2, 0 ],
       "rotation": [ 3.1415, 0, 1.5707 ],
       "scale": [ 1, 1, 1 ]
+    },
+    {
+      "name": "light",
+      "mesh": "assets/light.obj",
+      "material": "emissive",
+      "position": [ 0, 3.9, 0 ],
+      "rotation": [ 3.1415, 0, 0 ],
+      "scale": [ 0.75, 0.75, 0.75 ]
     }
   ],
   "camera": {

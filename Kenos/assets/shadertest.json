@@ -1,0 +1,29 @@
+{
+  "sceneName": "shader test",
+  "sceneDescription": "Scene ",
+  "sceneSize": "small",
+  "meshes": [ "assets/light.obj" ],
+  "materials": [
+    {
+      "name": "diffuseWhite",
+      "albedo": [ 255, 255, 255 ],
+      "emissiveIntensity": 0,
+      "roughness": 1
+    }
+  ],
+  "objects": [
+    {
+      "name": "light",
+      "mesh": "assets/light.obj",
+      "material": "diffuseWhite",
+      "position": [ 0, 0, 0 ],
+      "rotation": [ 0, 0, 0 ],
+      "scale": [ 1, 1, 1 ]
+    }
+  ],
+  "camera": {
+    "position": [ 0, 3, 0 ],
+    "rotation": [ 1.57, 0, 0 ],
+    "focalLength": 20
+  }
+}
