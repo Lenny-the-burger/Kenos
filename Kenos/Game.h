@@ -8,6 +8,8 @@
 #include "d3dcompiler.h"
 #include <stdio.h>
 
+#include "EngineConstants.h"
+
 #include "Mesh.h"
 #include "Material.h"
 #include "SceneObject.h"
@@ -17,11 +19,11 @@
 #include <vector>
 #include <map>
 
-#define WINDOW_SIZE_W 1000
-#define WINDOW_SIZE_H 800
-
 // Weather to set the scene name in the window title, as it causes a small delay on startup
 //#define KS_ENABLE_CUSTOM_WINDOW_TITLE
+
+// shh padding i kno
+#pragma warning(disable: 4324)
 
 // this is a constant buffer so needs to be a multiple of 16
 
@@ -32,6 +34,16 @@ struct alignas(16) CONSTANT_BUFFER_STRUCT
     int sampleLarge;
     float sampleScale;
 };
+
+struct alignas(16) SceneObjectsDataCBuffer
+{
+    int numObjects;
+    int objectPolyCount[KS_MAX_SCENEOBJECTS];
+    DirectX::XMFLOAT4X4 objectTransforms[KS_MAX_SCENEOBJECTS];
+};
+
+// enable padding warnings again
+#pragma warning(default: 4324)
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
@@ -80,12 +92,15 @@ private:
     void OnDeviceLost();
 
     void LoadShaders(const wchar_t* vs_path, const wchar_t* ps_path);
+
     void CreateLayout();
     void InitVertexBuffer();
-    void InitConstantBuffer();
 
+    void InitConstantBuffer();
     void UpdateShaderCameraConstantBuffer();
-    void MapNewBufferData();
+
+    void InitStructuredBuffers();
+    void UpdateStructuredBuffers();
     
     // Scene information
     SceneInformation GetSceneInformation() const noexcept;
@@ -118,9 +133,11 @@ private:
     
 	// Shaders
     ID3D11VertexShader* vertex_shader_ptr;
+    ID3D11GeometryShader* geometry_shader_ptr;
     ID3D11PixelShader* pixel_shader_ptr;
 
     ID3DBlob* vertex_shader_blob;
+    ID3DBlob* geometry_shader_blob;
     ID3DBlob* pixel_shader_blob;
     
     // iput layout
@@ -132,6 +149,9 @@ private:
     UINT vertex_stride;
     UINT vertex_offset;
     UINT vertex_count;
+
+    ID3D11Buffer* lightmapDirBufferPtr;
+    ID3D11Buffer* lightMapBufferPtr;
 
     // write unindexed vertex data to this in 3s, this will be written to the 
     // buffer when buffer_should_update == true. Remember to also 

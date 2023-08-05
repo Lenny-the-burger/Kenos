@@ -28,12 +28,13 @@ void Game::Initialize(HWND window, int width, int height)
     m_outputWidth = std::max(width, 1);
     m_outputHeight = std::max(height, 1);
 
-	localSceneInformation = SceneInformation("assets/scene.json");
+	localSceneInformation = SceneInformation("assets/cornell_box.json");
     localSceneInformation.UpdateScreenSize(WINDOW_SIZE_W, WINDOW_SIZE_H); // set to dflt window size
 
 	localSceneLightingInformation.SetScene(localSceneInformation);
 	localSceneLightingInformation.SetScreenRatio((float) m_outputWidth/m_outputHeight);
 
+    // This is really slow and freezes the window for a couple seconds. TODO: fix this.
 #ifdef KS_ENABLE_CUSTOM_WINDOW_TITLE
     // Set window title to scene name
     string sceneTitle = "Kenos - " + localSceneInformation.getSceneName();
@@ -43,7 +44,7 @@ void Game::Initialize(HWND window, int width, int height)
 
     CreateDevice();
 
-    CreateResources();
+    CreateResources();    
 
     LoadShaders(L"vertex.cso", L"pixel.cso");
 
@@ -54,8 +55,12 @@ void Game::Initialize(HWND window, int width, int height)
     InitConstantBuffer();
     UpdateShaderCameraConstantBuffer();
 
+    InitStructuredBuffers();
+
     localSceneLightingInformation.BuildLightTree();
-	//buffer_should_update = true;
+	buffer_should_update = true;
+
+    int temp = sizeof(SurfLight);
 
     // TODO: Change the timer settings if you want something other than the default variable timestep mode.
     // e.g. for 60 FPS fixed timestep update logic, call:
@@ -66,6 +71,60 @@ void Game::Initialize(HWND window, int width, int height)
 }
 
 #pragma region Pipeline initiliazation
+
+// Initializes the various constant buffers used by the shaders:
+// 1. Lightmap directory buffer, each primitve has an acosiated lightmap directory
+// 2. lightMap buffer, the structure that holds all of the lighting information
+// 3. Flattened lightmap buffer, contains the flatteend lightmap for each primitve.
+//    this buffer is only written to by the geometry shader.
+void Game::InitStructuredBuffers() {
+
+    // Lightmap directory buffer
+    D3D11_BUFFER_DESC sbDesc;
+    sbDesc.ByteWidth = sizeof(SurfaceLightmapDirectoryPacked) * localSceneInformation.getGlobalPolyCount();
+    sbDesc.Usage = D3D11_USAGE_DYNAMIC;
+    sbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    sbDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    sbDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+    sbDesc.StructureByteStride = sizeof(SurfaceLightmapDirectoryPacked);
+
+    // Shader Resource View description for the buffer
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+    srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+    srvDesc.Buffer.FirstElement = 0;
+    srvDesc.Buffer.NumElements = localSceneInformation.getGlobalPolyCount();
+
+    // Create the buffer and its associated SRV for Lightmap directory
+    ID3D11ShaderResourceView* lightmapDirSRV = nullptr;
+    HRESULT hr = m_d3dDevice->CreateBuffer(&sbDesc, nullptr, &lightmapDirBufferPtr);
+    assert(SUCCEEDED(hr));
+
+    m_d3dDevice->CreateShaderResourceView(lightmapDirBufferPtr, &srvDesc, &lightmapDirSRV);
+
+    m_d3dContext->PSSetShaderResources( 0, 1, &lightmapDirSRV );
+
+
+
+    // Lightmap buffer (SurfLight structure)
+    int lightmapSize = KS_MAX_SURFACE_LIGHTS * KS_MAX_RAY_BOUNCES * localSceneInformation.getGlobalPolyCount();
+
+    sbDesc.ByteWidth = sizeof(SurfLight) * lightmapSize;
+    sbDesc.StructureByteStride = sizeof(SurfLight);
+
+    srvDesc.Buffer.NumElements = lightmapSize;
+
+    // Create the buffer and its associated SRV for lightmap
+    ID3D11ShaderResourceView* lightMapSRV = nullptr;
+    hr = m_d3dDevice->CreateBuffer(&sbDesc, nullptr, &lightMapBufferPtr);
+    assert(SUCCEEDED(hr));
+
+    m_d3dDevice->CreateShaderResourceView(lightMapBufferPtr, &srvDesc, &lightMapSRV);
+
+    m_d3dContext->PSSetShaderResources( 1, 1, &lightMapSRV );
+}
+
+
 void Game::InitConstantBuffer() {
     // Create constant buffer with camera matrices. Setting is done in a deperate function
     // Define the constant data used to communicate with shaders
@@ -194,7 +253,7 @@ void Game::CreateLayout()
     assert(SUCCEEDED(hr));
 }
 
-/* Function to load compiled shaders
+/* Function to load compiled shaders. Requires the vertex, geometry, and pixel shader paths.
 * !! Shader version must be xs_4_0, xs_4_1, or xs_5_0 !!
 */
 void Game::LoadShaders(const wchar_t* vs_path, const wchar_t* ps_path)
@@ -244,7 +303,7 @@ void Game::Tick()
     if (buffer_should_update) {
         // Update the buffer
         localSceneLightingInformation.UpdateFinalRDFBuffer();
-        //MapNewBufferData();
+        UpdateStructuredBuffers();
     }
 
     Render();
@@ -266,6 +325,59 @@ void Game::Update(DX::StepTimer const& timer)
 
 void Game::SetShouldUpdate(bool should) {
     buffer_should_update = should;
+}
+
+void Game::UpdateStructuredBuffers() {
+
+    //  1. Update lightmap directory buffer
+    vector<SurfaceLightmapDirectoryPacked> newDirs = localSceneLightingInformation.GetDirectoryBuffer();
+
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+
+    int lightmapCount = newDirs.size();
+
+    SurfaceLightmapDirectoryPacked* dataPtr = new SurfaceLightmapDirectoryPacked[lightmapCount];
+
+    ZeroMemory(dataPtr, sizeof(SurfaceLightmapDirectoryPacked) * lightmapCount);
+
+    for (int i = 0; i < lightmapCount; i++) {
+		dataPtr[i] = newDirs[i];
+	}
+
+    m_d3dContext->Map(lightmapDirBufferPtr, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+
+    memcpy(mappedResource.pData, dataPtr, sizeof(SurfaceLightmapDirectoryPacked) * lightmapCount);
+
+    m_d3dContext->Unmap(lightmapDirBufferPtr, 0);
+
+    delete[] dataPtr;
+
+
+
+    //  2. Update lightmap data buffer
+    vector<SurfLight> newLightmap = localSceneLightingInformation.GetFinalLightmapBuffer();
+
+    D3D11_MAPPED_SUBRESOURCE mappedResource2; // no idea if we can reuse the old one or not
+    ZeroMemory(&mappedResource2, sizeof(D3D11_MAPPED_SUBRESOURCE));
+
+    lightmapCount = newLightmap.size();
+
+    SurfLight* dataPtr2 = new SurfLight[lightmapCount];
+
+    ZeroMemory(dataPtr2, sizeof(SurfLight) * lightmapCount);
+
+    for (int i = 0; i < lightmapCount; i++) {
+        dataPtr2[i] = newLightmap[i];
+    }
+
+    m_d3dContext->Map(lightMapBufferPtr, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource2);
+
+    memcpy(mappedResource2.pData, dataPtr2, sizeof(SurfLight) * lightmapCount);
+
+    m_d3dContext->Unmap(lightMapBufferPtr, 0);
+
+    delete[] dataPtr2;
 }
 
 // Get the current camera matrices and map into constant buffer
@@ -300,68 +412,6 @@ void Game::UpdateShaderCameraConstantBuffer() {
 
     m_d3dContext->Unmap(constant_buffer_ptr, 0);
 }
-
-void Game::MapNewBufferData() {
-    vector<ScreeSpaceRDF> new_buffer_data = localSceneLightingInformation.GetFinalRDFBuffer();
-
-    D3D11_MAPPED_SUBRESOURCE mappedResource;
-    ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-
-	vertex_count = (UINT) new_buffer_data.size() * 3;
-
-    float* new_vertex_data = new float[vertex_count * 6]; // need to make space for the color
-
-    ZeroMemory(new_vertex_data, sizeof(float) * vertex_count * 6);
-    
-    ScreeSpaceRDF currRDF;
-	Color currColor;
-	tuple<Vector3, Vector3, Vector3> currBounds;
-    int baseIndex;
-
-	for (int i = 0; i < new_buffer_data.size(); i++) {
-		currRDF = new_buffer_data[i];
-		currBounds = currRDF.final_bounds;
-		currColor = currRDF.color;
-        baseIndex = i * 18;
-
-        // layout has to follow this pattern:
-        // BBB1CCCBBB2CCCBBB3CCC
-		// where BBn is the nth bound, and CCC is the color
-		new_vertex_data[baseIndex +  0] = get<0>(currBounds).x;
-		new_vertex_data[baseIndex +  1] = get<0>(currBounds).y;
-		new_vertex_data[baseIndex +  2] = get<0>(currBounds).z;
-        
-		new_vertex_data[baseIndex +  3] = currColor.x;
-		new_vertex_data[baseIndex +  4] = currColor.y;
-		new_vertex_data[baseIndex +  5] = currColor.z;
-
-		new_vertex_data[baseIndex +  6] = get<1>(currBounds).x;
-		new_vertex_data[baseIndex +  7] = get<1>(currBounds).y;
-		new_vertex_data[baseIndex +  8] = get<1>(currBounds).z;
-        
-		new_vertex_data[baseIndex +  9] = currColor.x;
-		new_vertex_data[baseIndex + 10] = currColor.y;
-		new_vertex_data[baseIndex + 11] = currColor.z;
-
-		new_vertex_data[baseIndex + 12] = get<2>(currBounds).x;
-		new_vertex_data[baseIndex + 13] = get<2>(currBounds).y;
-		new_vertex_data[baseIndex + 14] = get<2>(currBounds).z;
-
-		new_vertex_data[baseIndex + 15] = currColor.x;
-		new_vertex_data[baseIndex + 16] = currColor.y;
-		new_vertex_data[baseIndex + 17] = currColor.z;
-	}
-    
-    // map unmap
-    m_d3dContext->Map(vertex_buffer_ptr, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
-
-    memcpy(mappedResource.pData, new_vertex_data, sizeof(float) * vertex_count * 6);
-
-	m_d3dContext->Unmap(vertex_buffer_ptr, 0);
-
-	delete[] new_vertex_data;
-}
-
 #pragma endregion
 
 #pragma region Frame Render
@@ -471,7 +521,7 @@ void Game::OnWindowSizeChanged(int width, int height)
 
     // update lighting information screen ratio and force update
 	localSceneLightingInformation.SetScreenRatio((float) m_outputWidth/m_outputHeight);
-    //buffer_should_update = true;
+    buffer_should_update = true;
 }
 
 // Properties
