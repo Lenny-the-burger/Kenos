@@ -1,3 +1,11 @@
+/* 
+ * The main shader file. this file contains all shader stages and must be compiled
+ * into the three shaders (vs, gs, ps).
+ */
+
+#include "functionsLib.hlsl"
+#include "EngineConstants.h"
+
 struct VertexInput
 {
     float3 position : POSITION;
@@ -12,15 +20,25 @@ cbuffer CONSTANT_BUFFER_STRUCT : register(b0)
 {
     float4x4 viewMatrix;
     float4x4 projectionMatrix;
+    
     int sampleLarge;
     float sampleScale;
 };
 
-#define PROJECT_ORTHOn
-
-PixelInput vs_main(VertexInput input)
+cbuffer SceneObjectsDataCBuffer : register(b1)
 {
+    int numObjects;
+    int objectPolyCount[KS_MAX_SCENEOBJECTS];
+    float4x4 objectTransforms[KS_MAX_SCENEOBJECTS];
+};
+
+//#define PROJECT_ORTHO
+
+PixelInput vs_main(VertexInput input, uint vertID : SV_VertexID) {
+    
     PixelInput output;
+    
+    // Projection:
     
 #ifdef PROJECT_ORTHO
     // Debug ortho projection (top down):
@@ -34,7 +52,6 @@ PixelInput vs_main(VertexInput input)
     float4 viewPosition = mul(worldPosition, projectionMatrix);
 
     // Step 3: Set the output position (in clip space)
-    //output.position = (viewPosition * float4(0.5, 0.5, -0.01, 1)) + float4(0, 1, 0, 0);
     output.position = viewPosition;
     
 #endif
@@ -123,6 +140,24 @@ float4 ps_main(PixelInput input, uint primID : SV_PrimitiveID) : SV_Target {
     
     return float4(color + clipmask, color, color, 1.0f);
 }
+#else
+
+float4 ps_main(PixelInput input, uint primID : SV_PrimitiveID) : SV_Target{
+    SurfaceLightmapDirectoryPacked primDir = DirectoryBuffer[primID];
+    int lightmapOffset = KS_MAX_SURFACE_LIGHTS * primID;
+    SurfLight temp;
     
-    return float4(color, color, color, 1.0f);
+    if (primDir.numLights > KS_MAX_SURFACE_LIGHTS) {
+        // this should never happen, we didnt cull the lightmap correctly
+    }
+    
+    float3 color = primDir.color;
+    
+    if (primDir.emmisiveStrength < 0.1f) {
+        color *= rand(primID)*0.2f + (1.0f - 0.5f);
+    }
+    //color *= primDir.emmisiveStrength;
+
+    return float4(color, 1.0f);
 }
+#endif
