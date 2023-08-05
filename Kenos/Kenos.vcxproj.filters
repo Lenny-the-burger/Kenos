@@ -60,6 +60,9 @@
     <ClInclude Include="VisCompute.h">
       <Filter>Compute</Filter>
     </ClInclude>
+    <ClInclude Include="EngineConstants.h">
+      <Filter>Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -114,14 +117,17 @@
     <None Include="..\README.md">
       <Filter>Misc files</Filter>
     </None>
-    <None Include="assets\scene.json">
-      <Filter>Misc files</Filter>
-    </None>
     <None Include="..\.gitattributes">
       <Filter>Misc files</Filter>
     </None>
     <None Include="..\.gitignore">
       <Filter>Misc files</Filter>
+    </None>
+    <None Include="assets\cornell_box.json">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="assets\shadertest.json">
+      <Filter>Assets</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -131,15 +137,23 @@
   </ItemGroup>
   <ItemGroup>
     <Media Include="assets\floor.obj">
-      <Filter>Misc files</Filter>
+      <Filter>Assets</Filter>
     </Media>
     <Media Include="assets\icoSphere.obj">
-      <Filter>Misc files</Filter>
+      <Filter>Assets</Filter>
     </Media>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="shaders.hlsl">
       <Filter>Shaders</Filter>
     </CustomBuild>
+    <CustomBuild Include="functionsLib.hlsl">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="assets\light.obj">
+      <Filter>Assets</Filter>
+    </Object>
   </ItemGroup>
 </Project>

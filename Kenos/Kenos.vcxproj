@@ -187,6 +187,7 @@
   <ItemGroup>
     <ClInclude Include="ClippingLib.h" />
     <ClInclude Include="CoreFuncsLib.h" />
+    <ClInclude Include="EngineConstants.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="LightTreeCompute.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -243,7 +244,8 @@
     <None Include="..\.gitignore" />
     <None Include="..\LICENSE" />
     <None Include="..\README.md" />
-    <None Include="assets\scene.json" />
+    <None Include="assets\cornell_box.json" />
+    <None Include="assets\shadertest.json" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -274,6 +276,17 @@ fxc /Zi /T ps_5_0 /Fo $(OutDir)pixel.cso /E ps_main %(FullPath) /nologo</Command
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vertex.cso;pixel.cso;%(Outputs)</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
       <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</BuildInParallel>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="assets\light.obj">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </Object>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="functionsLib.hlsl">
+      <FileType>Document</FileType>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">!! functionsLib.hlsl is compiling and shouldnt !!</Message>
     </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
