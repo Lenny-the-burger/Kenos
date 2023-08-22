@@ -1,6 +1,6 @@
 # Kenos rendering engine
 
-Kenos is a rendering engine that implements polygon tracing. It is written in c++ and uses the DirectX API for rendering. The documentation for usage and the theory behind it can be found <pending>
+Kenos is a rendering engine that implements polygon tracing. It is written in c++ and uses the DirectX API for rendering. The documentation for usage and the theory behind it can be found [pending]
 
 The Kenos engine will eventually be released as an SDK that can be integrated into existing projects, but for now it is still in development.
 
