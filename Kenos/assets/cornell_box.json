@@ -56,7 +56,7 @@
       "name": "ceiling",
       "mesh": "assets/floor.obj",
       "material": "diffuseWhite",
-      "position": [ 0, 4, 0 ],
+      "position": [ 0, 3.999, 0 ],
       "rotation": [ 0, 0, 0 ],
       "scale": [ 1, 1, 1 ]
     },
