@@ -10,15 +10,93 @@
 #include "CoreFuncsLib.h"
 #include <DirectXMath.h>
 #include <SimpleMath.h>
+#include <math.h> 
 
+using namespace std;
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
 using Microsoft::WRL::ComPtr;
 
-#include <DirectXMath.h>
+bool BVHintesects(const Ray& ray, const Vector3& Vmin, const Vector3& Vmax) {
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 
-#include <DirectXMath.h>
+	tmin = (Vmin.x - ray.position.x) / ray.direction.x;
+	tmax = (Vmax.x - ray.position.x) / ray.direction.x;
+
+	if (tmin > tmax)
+		std::swap(tmin, tmax);
+
+	tymin = (Vmin.y - ray.position.y) / ray.direction.y;
+	tymax = (Vmax.y - ray.position.y) / ray.direction.y;
+
+	if (tymin > tymax)
+		std::swap(tymin, tymax);
+
+	if ((tmin > tymax) || (tymin > tmax))
+		return false;
+
+	if (tymin > tmin)
+		tmin = tymin;
+
+	if (tymax < tmax)
+		tmax = tymax;
+
+	tzmin = (Vmin.z - ray.position.z) / ray.direction.z;
+	tzmax = (Vmax.z - ray.position.z) / ray.direction.z;
+
+	if (tzmin > tzmax)
+		std::swap(tzmin, tzmax);
+
+	if ((tmin > tzmax) || (tzmin > tmax))
+		return false;
+
+	return true;
+}
+
+// Function to create the transformation matrix from 3D to 2D.
+// !! keep in mind that the updirection is normalized, it does this for you but 
+// you may get unexpected results if you pass in a non-normalized vector and forget about this !!
+XMMATRIX CreateTransformTo2D(XMVECTOR planeCoefficients, Vector3 upDirection) {
+	// Extract the normal vector from the plane coefficients
+	XMVECTOR normal = XMVector3Normalize(XMVectorSetW(planeCoefficients, 0.0f));
+
+	// Create the up vector
+	XMVECTOR up = XMLoadFloat3(&upDirection);
+	up = XMVector3Normalize(up);
+
+	// Compute the right (x-axis) vector within the plane
+	XMVECTOR right = XMVector3Normalize(XMVector3Cross(normal, up));
+
+	// Compute the translation components based on the dot product with the plane coefficients
+	float translationRight = -XMVectorGetX(XMVector3Dot(right, planeCoefficients));
+	float translationUp = -XMVectorGetX(XMVector3Dot(up, planeCoefficients));
+	float translationNormal = -XMVectorGetX(XMVector3Dot(normal, planeCoefficients));
+
+	// Create the transformation matrix using the right, up, and normal vectors, along with the translation components
+	XMMATRIX transformMatrix = {
+		right.m128_f32[0], up.m128_f32[0], normal.m128_f32[0], translationRight,
+		right.m128_f32[1], up.m128_f32[1], normal.m128_f32[1], translationUp,
+		right.m128_f32[2], up.m128_f32[2], normal.m128_f32[2], translationNormal,
+		0.0f, 0.0f, 0.0f, 1.0f
+	};
+
+	return transformMatrix;
+}
+
+// Function to create the transformation matrix from 2D to 3D.
+XMMATRIX CreateTransformTo3D(XMVECTOR planeCoefficients, Vector3 upDirection)
+{
+	// Create the 3D to 2D transformation matrix.
+	XMMATRIX transformTo2D = CreateTransformTo2D(planeCoefficients, upDirection);
+
+	// Return the inverse of the transformation matrix to get the 2D to 3D transformation.
+	return XMMatrixInverse(nullptr, transformTo2D);
+}
+
+float normalDist(float mean, float stdev, float x) {
+	return (1 / (stdev * 2.50662827463f)) * exp(-0.5f * pow((x - mean) / stdev, 2));
+}
 
 DirectX::XMMATRIX OrthographicProjectionOntoPlane(const DirectX::XMVECTOR plane)
 {

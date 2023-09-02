@@ -10,8 +10,17 @@
 #include <memory>
 #include <DirectXMath.h>
 #include <vector>
+#include <algorithm>
 
 using DXVector3 = DirectX::SimpleMath::Vector3;
+
+bool BVHintesects(const DirectX::SimpleMath::Ray& ray, const DXVector3& min, const DXVector3& max);
+
+DirectX::XMMATRIX CreateTransformTo3D(DirectX::XMVECTOR planeCoefficients, DXVector3 upDirection);
+
+DirectX::XMMATRIX CreateTransformTo2D(DirectX::XMVECTOR planeCoefficients, DXVector3 upDirection);
+
+float normalDist(float mean, float stdev, float x);
 
 // Create a matrix that projects onto a plane
 DirectX::XMMATRIX OrthographicProjectionOntoPlane(const DirectX::XMVECTOR plane);
