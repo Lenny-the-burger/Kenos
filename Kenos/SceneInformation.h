@@ -88,6 +88,10 @@ public:
 	// return triangle at global index idx
 	std::tuple<DXVector3, DXVector3, DXVector3> getTribyGlobalIndex(int idx);
 
+	// Write triangle at global index idx to verts. This is much faster than getTribyGlobalIndex
+	// but does not return anything and you have to provide a c style array to write to.
+	void getTribyGlobalIndexFast(DXVector3 verts[3], int idx);
+
 	// reverse of getTribyGlobalIndex, returns the index of the object that contains 
 	// the triangle at global index idx
 	int getObjIndexbyGlobalIndex(int idx);
@@ -109,6 +113,11 @@ public:
 	Camera getCam();
 
 	DXVector3 untransformFromCam(DXVector3 vect);
+
+	// Recopmute BVs for scene objects
+	void recomputeObjBVH();
+
+	std::pair<int, int> getObjectTrisRange(int objIdx);
 
 private:
 	// Scene object arrays

@@ -34,6 +34,10 @@ void Game::Initialize(HWND window, int width, int height)
 	localSceneLightingInformation.SetScene(localSceneInformation);
 	localSceneLightingInformation.SetScreenRatio((float) m_outputWidth/m_outputHeight);
 
+    origCamPos = localSceneInformation.getCam().Apos;
+    camRot = 0.0f;
+
+
     // This is really slow and freezes the window for a couple seconds. TODO: fix this.
 #ifdef KS_ENABLE_CUSTOM_WINDOW_TITLE
     // Set window title to scene name
@@ -59,8 +63,6 @@ void Game::Initialize(HWND window, int width, int height)
 
     localSceneLightingInformation.BuildLightTree();
 	buffer_should_update = true;
-
-    int temp = sizeof(SurfLight);
 
     // TODO: Change the timer settings if you want something other than the default variable timestep mode.
     // e.g. for 60 FPS fixed timestep update logic, call:
@@ -107,7 +109,7 @@ void Game::InitStructuredBuffers() {
 
 
     // Lightmap buffer (SurfLight structure)
-    int lightmapSize = KS_MAX_SURFACE_LIGHTS * KS_MAX_RAY_BOUNCES * localSceneInformation.getGlobalPolyCount();
+    int lightmapSize = KS_MAX_SURFACE_LIGHTS * localSceneInformation.getGlobalPolyCount();
 
     sbDesc.ByteWidth = sizeof(SurfLight) * lightmapSize;
     sbDesc.StructureByteStride = sizeof(SurfLight);
@@ -147,11 +149,16 @@ void Game::InitConstantBuffer() {
     CONSTANT_BUFFER_STRUCT shaderConstantData = {};
     ZeroMemory(&shaderConstantData, sizeof(CONSTANT_BUFFER_STRUCT));
 
-    shaderConstantData.sampleLarge = KS_CONVOLUTION_SAMPLE_LARGE;
-    shaderConstantData.sampleScale = KS_CONVOLUTION_SAMPLE_SCALE;
+    shaderConstantData.sampleLarge = KS_SAMPLE_LARGE;
+    shaderConstantData.sampleScale = KS_SAMPLE_SCALE;
     
     XMStoreFloat4x4(&shaderConstantData.viewMatrix, XMMatrixTranspose(view));
     XMStoreFloat4x4(&shaderConstantData.projectionMatrix, XMMatrixTranspose(projection));
+
+    shaderConstantData.screenW = WINDOW_SIZE_W;
+    shaderConstantData.screenH = WINDOW_SIZE_H;
+
+    shaderConstantData.globalPolyCount = localSceneInformation.getGlobalPolyCount();
 
     // Fill in the subresource data.
     D3D11_SUBRESOURCE_DATA InitData;
@@ -315,10 +322,11 @@ void Game::Update(DX::StepTimer const& timer)
     float elapsedTime = float(timer.GetElapsedSeconds());
 
     // TODO: Add your game logic here
-    /*Vector3 oldpos = localSceneInformation.getCam().Apos;
+    //Vector3 offset = Vector3(sin(camRot), cos(camRot), 0);
+    //localSceneInformation.setCameraPos(origCamPos + offset);
+    //UpdateShaderCameraConstantBuffer();
 
-    localSceneInformation.setCameraPos(oldpos + Vector3{0, 0, -0.1f});
-    UpdateShaderCameraConstantBuffer();*/
+    camRot += 0.01f;
 
     elapsedTime;
 }
@@ -356,24 +364,34 @@ void Game::UpdateStructuredBuffers() {
 
 
     //  2. Update lightmap data buffer
-    vector<SurfLight> newLightmap = localSceneLightingInformation.GetFinalLightmapBuffer();
+    map<int, vector<SurfLight>> newLightmap = localSceneLightingInformation.GetFinalLightmapBuffer();
 
     D3D11_MAPPED_SUBRESOURCE mappedResource2; // no idea if we can reuse the old one or not
     ZeroMemory(&mappedResource2, sizeof(D3D11_MAPPED_SUBRESOURCE));
 
-    lightmapCount = newLightmap.size();
+    int pcount = localSceneInformation.getGlobalPolyCount();
 
-    SurfLight* dataPtr2 = new SurfLight[lightmapCount];
+    SurfLight* dataPtr2 = new SurfLight[pcount * KS_MAX_SURFACE_LIGHTS];
 
-    ZeroMemory(dataPtr2, sizeof(SurfLight) * lightmapCount);
+    ZeroMemory(dataPtr2, sizeof(SurfLight) * pcount * KS_MAX_SURFACE_LIGHTS);
 
-    for (int i = 0; i < lightmapCount; i++) {
-        dataPtr2[i] = newLightmap[i];
+    for (int i = 0; i < pcount; i++) {
+        vector<SurfLight> currSurfLights = newLightmap[i];
+        int lightCount = currSurfLights.size();
+
+        for (int j = 0; j < KS_MAX_SURFACE_LIGHTS; j++) {
+			// Check if the surface light exists
+            if (j < lightCount) {
+                dataPtr2[i * KS_MAX_SURFACE_LIGHTS + j] = currSurfLights[j];
+            }
+            // Otherwise we could add an empty light, but we can just leave it as
+            // random garbage since the shader will ignore it anyway
+		}
     }
 
     m_d3dContext->Map(lightMapBufferPtr, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource2);
 
-    memcpy(mappedResource2.pData, dataPtr2, sizeof(SurfLight) * lightmapCount);
+    memcpy(mappedResource2.pData, dataPtr2, sizeof(SurfLight) * pcount * KS_MAX_SURFACE_LIGHTS);
 
     m_d3dContext->Unmap(lightMapBufferPtr, 0);
 
@@ -393,11 +411,16 @@ void Game::UpdateShaderCameraConstantBuffer() {
     CONSTANT_BUFFER_STRUCT shaderConstantData = {};
     ZeroMemory(&shaderConstantData, sizeof(CONSTANT_BUFFER_STRUCT));
 
-    shaderConstantData.sampleLarge = KS_CONVOLUTION_SAMPLE_LARGE;
-    shaderConstantData.sampleScale = KS_CONVOLUTION_SAMPLE_SCALE;
+    shaderConstantData.sampleLarge = KS_SAMPLE_LARGE;
+    shaderConstantData.sampleScale = KS_SAMPLE_SCALE;
 
     XMStoreFloat4x4(&shaderConstantData.viewMatrix, XMMatrixTranspose(view));
     XMStoreFloat4x4(&shaderConstantData.projectionMatrix, XMMatrixTranspose(projection));
+
+    shaderConstantData.screenW = m_outputWidth;
+    shaderConstantData.screenH = m_outputHeight;
+
+    shaderConstantData.globalPolyCount = localSceneInformation.getGlobalPolyCount();
 
     // Map the camera matrices into the constant buffer
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -450,7 +473,7 @@ void Game::Render()
 void Game::Clear()
 {
     // Clear the views.
-    m_d3dContext->ClearRenderTargetView(m_renderTargetView.Get(), Colors::CornflowerBlue);
+    m_d3dContext->ClearRenderTargetView(m_renderTargetView.Get(), Colors::Black);
     m_d3dContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     m_d3dContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());

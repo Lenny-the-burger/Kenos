@@ -144,10 +144,10 @@
     </Media>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="shaders.hlsl">
+    <CustomBuild Include="functionsLib.hlsl">
       <Filter>Shaders</Filter>
     </CustomBuild>
-    <CustomBuild Include="functionsLib.hlsl">
+    <CustomBuild Include="shaders.hlsl">
       <Filter>Shaders</Filter>
     </CustomBuild>
   </ItemGroup>

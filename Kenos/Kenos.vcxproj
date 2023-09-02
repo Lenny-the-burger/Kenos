@@ -265,17 +265,17 @@
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="shaders.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
-      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vs_main, ps_main</EntryPointName>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ps_main</EntryPointName>
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">fxc /Zi /T vs_5_0 /Fo $(OutDir)vertex.cso /E vs_main %(FullPath) /nologo
-fxc /Zi /T ps_5_0 /Fo $(OutDir)pixel.cso /E ps_main %(FullPath) /nologo</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">fxc /Zi /T vs_5_0 /Od /Fo $(OutDir)vertex.cso /E vs_main %(FullPath) /nologo
+fxc /Zi /T ps_5_0 /Od /Fo $(OutDir)pixel.cso /E ps_main %(FullPath) /nologo</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compiling shader %(FullPath) into pixel and vertex shaders...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vertex.cso;pixel.cso;%(Outputs)</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
       <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</BuildInParallel>
+      <DisableOptimizations Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DisableOptimizations>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>

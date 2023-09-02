@@ -32,11 +32,22 @@ public:
     // get the final (transformed/scaled/rotated) vertex at index idx
     const DirectX::SimpleMath::Vector3 GetFinalVtx(int idx) const;
 
+    int GetFaceCount() const;
+    DirectX::SimpleMath::Vector3 GetMeshIndex(int idx);
+
+    void computeBVH();
+
+    std::tuple<DirectX::SimpleMath::Vector3, DirectX::SimpleMath::Vector3> getBVH() const;
+
 private:
     DirectX::SimpleMath::Vector3 m_position;
     DirectX::SimpleMath::Vector3 m_rotation;
+    DirectX::XMVECTOR m_rotQuat;
     DirectX::SimpleMath::Vector3 m_scale;
     Mesh m_mesh;
     Material m_material;
+
+    DirectX::SimpleMath::Vector3 m_BVHmax;
+    DirectX::SimpleMath::Vector3 m_BVHmin;
 };
 

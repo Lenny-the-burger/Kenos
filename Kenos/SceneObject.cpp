@@ -39,6 +39,7 @@ const Vector3& SceneObject::GetPosition() const
 void SceneObject::SetRotation(const Vector3 rotation)
 {
     m_rotation = rotation;
+    m_rotQuat = XMQuaternionRotationRollPitchYaw(m_rotation.x, m_rotation.y, m_rotation.z);
 }
 
 const Vector3& SceneObject::GetRotation() const
@@ -76,6 +77,14 @@ const Material& SceneObject::GetMaterial()
     return m_material;
 }
 
+int SceneObject::GetFaceCount() const{
+    return m_mesh.GetFaceCount();
+}
+
+Vector3  SceneObject::GetMeshIndex(int idx) {
+    return m_mesh.m_indices[idx];
+}
+
 // get the final (transformed/scaled/rotated) vertex at index idx
 const Vector3 SceneObject::GetFinalVtx(int idx) const
 {
@@ -84,10 +93,29 @@ const Vector3 SceneObject::GetFinalVtx(int idx) const
     // Apply transformations (scale, rotation, and translation)
     vertex *= m_scale;                          // Scale
     
-	XMVECTOR rotQuat = XMQuaternionRotationRollPitchYaw(m_rotation.x, m_rotation.y, m_rotation.z);
-	vertex = XMVector3Rotate(vertex, rotQuat);  // Rotation
+	vertex = XMVector3Rotate(vertex, m_rotQuat);  // Rotation
     
     vertex += m_position;                       // Translation
 
     return vertex;
+}
+
+void SceneObject::computeBVH() {
+    // loop through all the verts and find the max and min x, y, and z values
+    int numVerts = m_mesh.GetVertexCount();
+
+    Vector3 max = Vector3::Zero;
+    Vector3 min = Vector3::Zero;
+
+    for (int i = 0; i < numVerts; i++) {
+        max = Vector3::Max(max, GetFinalVtx(i));
+        min = Vector3::Min(min, GetFinalVtx(i));
+    }
+
+    m_BVHmax = max;
+    m_BVHmin = min;
+}
+
+std::tuple<Vector3, Vector3> SceneObject::getBVH() const {
+	return std::make_tuple(m_BVHmax, m_BVHmin);
 }

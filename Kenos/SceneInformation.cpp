@@ -151,10 +151,36 @@ SceneInformation::SceneInformation(string filePath) {
 	else {
 		size = KS_SCENESIZE_MEDIUM;
 	}
+
+	recomputeObjBVH();
 };
 
 SceneInformation::~SceneInformation() {
 
+}
+
+std::pair<int, int> SceneInformation::getObjectTrisRange(int objIdx) {
+	int start = 0;
+	int end = 0;
+
+	if (objIdx == 0) {
+		start = 0;
+		end = sceneObjects[0].GetMesh().GetFaceCount();
+	}
+	else {
+		for (int i = 0; i < objIdx; i++) {
+			start += sceneObjects[i].GetMesh().GetFaceCount();
+		}
+		end = start + sceneObjects[objIdx].GetMesh().GetFaceCount();
+	}
+
+	return std::make_pair(start, end);
+}
+
+void SceneInformation::recomputeObjBVH() {
+	for (SceneObject& obj : sceneObjects) {
+		obj.computeBVH();
+	}
 }
 
 DXVector3 SceneInformation::untransformFromCam(DXVector3 vect) {
@@ -170,6 +196,35 @@ SceneSize SceneInformation::getSceneSize() {
 
 int SceneInformation::getGlobalPolyCount() {
 	return globalPolyCount;
+}
+
+void SceneInformation::getTribyGlobalIndexFast(DXVector3 verts[3], int idx) {
+	int currentSO = 0;
+	int accTriCount = 0;
+	int nextFaceAmount = 0;
+
+	for (SceneObject& obj : sceneObjects) {
+		nextFaceAmount = obj.GetFaceCount();
+
+		// if the index is less than the accumulated tri count then we are in range
+		if (idx < accTriCount + nextFaceAmount) {
+			// get the face index vector at position idx - accTriCount
+			Vector3 faceIdxVec = obj.GetMeshIndex(idx - accTriCount);
+
+			// using each element in the index vector construct tuple from GetFinalVtx()
+			verts[0] = obj.GetFinalVtx((int)faceIdxVec.x);
+			verts[1] = obj.GetFinalVtx((int)faceIdxVec.y);
+			verts[2] = obj.GetFinalVtx((int)faceIdxVec.z);
+
+			return;
+		}
+
+		// otherwise we need to move on to the next object
+		currentSO++;
+		accTriCount += nextFaceAmount;
+	}
+	//throw std::out_of_range("Triangle index out of range");
+	return;
 }
 
 tuple<Vector3, Vector3, Vector3> SceneInformation::getTribyGlobalIndex(int idx) {

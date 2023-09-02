@@ -18,7 +18,10 @@ public:
     const DirectX::SimpleMath::Vector3 GetIndex(int idx) const;
     int GetFaceCount() const;
 
-private:
     std::vector<DirectX::SimpleMath::Vector3> m_vertices;
     std::vector<DirectX::SimpleMath::Vector3> m_indices;
+
+private:
+    // The vertices and indeces should probably be private but i dont want to 
+    // engage in pointer shenaningans right now for the sake of optimization
 };

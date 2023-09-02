@@ -31,8 +31,14 @@ struct alignas(16) CONSTANT_BUFFER_STRUCT
 {
     DirectX::XMFLOAT4X4 viewMatrix;
     DirectX::XMFLOAT4X4 projectionMatrix;
+
     int sampleLarge;
     float sampleScale;
+
+    int screenW;
+    int screenH;
+
+    int globalPolyCount;
 };
 
 struct alignas(16) SceneObjectsDataCBuffer
@@ -153,8 +159,7 @@ private:
     ID3D11Buffer* lightmapDirBufferPtr;
     ID3D11Buffer* lightMapBufferPtr;
 
-    // write unindexed vertex data to this in 3s, this will be written to the 
-    // buffer when buffer_should_update == true. Remember to also 
-    /*float& new_vertex_buffer_data_ptr;*/
+    float camRot;
+    DirectX::SimpleMath::Vector3 origCamPos;
 };
 ;
